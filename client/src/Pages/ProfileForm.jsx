@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,8 +12,21 @@ const stepVariants = {
 };
 
 const ProfileForm = () => {
-  const { email } = useParams(); // Get userEmail from URL
+
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const email = searchParams.get("email");
+
+
+    // Redirect if no userEmail is provided
+    useEffect(() => {
+      if (!email) {
+        toast.error("No email provided for profile creation. Please try registering again.", {
+          style: { background: "#F44336", color: "white" },
+        });
+        navigate("/signup");
+      }
+    }, [email, navigate]);
 
   // Form state
   const [step, setStep] = useState(1);
@@ -29,15 +42,7 @@ const ProfileForm = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Redirect if no userEmail is provided
-  useEffect(() => {
-    if (!email) {
-      toast.error("No email provided for profile creation. Please try registering again.", {
-        style: { background: "#F44336", color: "white" },
-      });
-      navigate("/signup");
-    }
-  }, [email, navigate]);
+
 
   // Handle input changes
   const handleChange = (e) => {
