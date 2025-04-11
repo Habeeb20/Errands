@@ -4,6 +4,7 @@ import Footer from '../components/Footer'
 import Home1 from '../components/LandingPage/Home1'
 import Home2 from '../components/LandingPage/Home2'
 import Home3 from '../components/LandingPage/Home3'
+import AllErrander from '../components/errander/AllErrander'
 
 const Home = () => {
   return (
@@ -12,6 +13,7 @@ const Home = () => {
             <Home1 />
             <Home2 />
             <Home3 />
+            <AllErrander />
         <Footer />
       
     </div>

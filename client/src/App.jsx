@@ -11,6 +11,8 @@ import AdminLogin from './Pages/AdminLogin';
 import AdminDashboard from './Pages/AdminDashboard';
 import VerifyEmail from './Pages/VerifyEmail';
 import ProfileForm from './Pages/ProfileForm';
+import ErrandDashboard from './Pages/Errander/ErranderDashboard';
+import Errander from './components/errander/Errander';
 const App = () => {
   return (
     <div>
@@ -36,6 +38,11 @@ const App = () => {
           <Route path="/adminlogin" element={<AdminLogin />} />
           <Route path="/admindashboard" element={<AdminDashboard />} />
           <Route path="/profileform" element={<ProfileForm />} />
+          <Route path="/profile/:slug" element={<Errander />} />
+
+
+
+          <Route path="/erranderdashboard" element={<ErrandDashboard />} />
         </Routes>
       </Router>
       
