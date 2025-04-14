@@ -13,6 +13,7 @@ import VerifyEmail from './Pages/VerifyEmail';
 import ProfileForm from './Pages/ProfileForm';
 import ErrandDashboard from './Pages/Errander/ErranderDashboard';
 import Errander from './components/errander/Errander';
+import Profile from './Pages/Errander/Profile';
 const App = () => {
   return (
     <div>
@@ -43,6 +44,7 @@ const App = () => {
 
 
           <Route path="/erranderdashboard" element={<ErrandDashboard />} />
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </Router>
       

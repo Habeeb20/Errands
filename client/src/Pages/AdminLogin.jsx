@@ -83,7 +83,7 @@ const AdminLogin = () => {
                 placeholder="James Johnson"
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
-                disabled={loading} // Disable input while loading
+                disabled={loading} 
               />
             </div>
             <div>
@@ -97,7 +97,7 @@ const AdminLogin = () => {
                 placeholder="20"
                 className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 required
-                disabled={loading} // Disable input while loading
+                disabled={loading} 
               />
             </div>
             <button
