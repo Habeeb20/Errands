@@ -3,6 +3,8 @@ import axios from 'axios';
 import { motion, useInView } from 'framer-motion';
 import { toast } from 'sonner';
 import { useParams } from 'react-router-dom';
+import Footer from '../Footer';
+import Navbar from '../Navbar';
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 50 },
@@ -118,7 +120,9 @@ const Errander = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <>
+    <Navbar />
+      <div className="min-h-screen bg-gray-100">
       {/* Main Content */}
       <div className="max-w-4xl mx-auto p-6">
         {/* Header Section */}
@@ -144,7 +148,7 @@ const Errander = () => {
                 onClick={handleShareClick}
                 className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
               >
-                Joined since 2023 ({shareCount})
+                Joined since  {new Date(profile?.userId?.registrationDate).toLocaleDateString()}
               </button>
               <button className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
                 Cancel
@@ -171,7 +175,7 @@ const Errander = () => {
               </div>
               <div className="bg-white p-4 rounded-lg shadow">
                 <label className="block text-sm font-medium text-gray-700">Phone No.</label>
-                <p className="mt-1 p-2 bg-gray-100 rounded">{profile?.phone || 'N/A'}</p>
+                <p className="mt-1 p-2 bg-gray-100 rounded">{profile?.userId?.phone || 'N/A'}</p>
               </div>
               <div className="bg-white p-4 rounded-lg shadow">
                 <label className="block text-sm font-medium text-gray-700">Do you own a vehicle?</label>
@@ -267,7 +271,7 @@ const Errander = () => {
         {/* Comments Section */}
         <AnimatedSection>
           <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Reviews</h2>
+            <h2 className="text-xl font-semibold mb-4">Reviews {comments.length}</h2>
             <div className="space-y-4">
               {comments.length > 0 ? (
                 comments.map((comment, index) => (
@@ -296,7 +300,7 @@ const Errander = () => {
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="mt-4 text-blue-600 underline"
+              className="mt-4 bg-green-700 p-3 rounded-full text-white"
             >
               Add a review
             </button>
@@ -349,6 +353,9 @@ const Errander = () => {
         </div>
       )}
     </div>
+    <Footer />
+    </>
+  
   );
 };
 

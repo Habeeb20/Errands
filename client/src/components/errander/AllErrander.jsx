@@ -6,12 +6,10 @@ import { FaShareAlt, FaBox, FaThumbsUp, FaThumbsDown } from 'react-icons/fa';
 import DistanceBadge from '../DistanceBadge';
 import { Link } from 'react-router-dom';
 
-
 const sectionVariants = {
   hidden: { opacity: 0, y: 50 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: 'easeOut' } },
 };
-
 
 const AnimatedSection = ({ children }) => {
   const ref = useRef(null);
@@ -30,68 +28,158 @@ const AnimatedSection = ({ children }) => {
 };
 
 const AllErrander = () => {
-  // Fix: Correct useState syntax
   const [data, setData] = useState([]);
-  const {clicks, setClicks} = useState(0)
-  const {shares, setShares} = useState(0)
-  const {comments, setComments} = useState(0)
-  const {slug, setSlug} = useState("")
-
+  const [loading, setLoading] = useState(true);
+  const [shareCounts, setShareCounts] = useState({}); // Track shares per errander
+  const [clickCounts, setClickCounts] = useState({}); // Track clicks per errander
+  const [clicks, setClicks] = useState([])
+  const [comments, setComments] = useState([])
+  const [error,setError] = useState('')
+  // Fetch all erranders
   useEffect(() => {
     const fetchAllErranders = async () => {
       try {
+        setLoading(true);
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/erranders`);
         toast.success('Erranders are available', {
           style: { background: 'white', color: 'black' },
         });
-        setData(response.data.data);
-        console.log(response.data)
-        setSlug(response.data.data?.slug)
+        setData(response.data.data || []);
+     
+        // Initialize share and click counts
+        const initialShareCounts = {};
+        const initialClickCounts = {};
+        response.data.data.forEach((errander) => {
+          initialShareCounts[errander.slug] = 0;
+          initialClickCounts[errander.slug] = 0;
+        });
+        setShareCounts(initialShareCounts);
+        setClickCounts(initialClickCounts);
+
+    
       } catch (error) {
-        console.log(error);
-        toast.error('Error occurred', {
+        console.log('Error fetching erranders:', error);
+        toast.error('Error occurred while fetching erranders', {
           style: { background: 'white', color: 'black' },
         });
+      } finally {
+        setLoading(false);
       }
     };
     fetchAllErranders();
   }, []);
 
-
-
-  ///get clicks 
-
+  // Fetch shares for each errander
   useEffect(() => {
-    const fetchClicks = async() => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/get-clicks`);
-            setClicks(response.data.profile.length)
-            console.log(response.data.profile.length)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-    fetchClicks()
-  }, [])
+    const fetchShares = async (slug) => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/shares`);
+        setShareCounts((prev) => ({
+          ...prev,
+          [slug]: response.data.shareCount || 0,
+        }));
+    
+      } catch (error) {
+        console.log(`Failed to fetch shares for ${slug}:`, error);
+        toast.error(`Failed to fetch shares for ${slug}`, {
+          style: { background: 'white', color: 'red' },
+        });
+      }
+    };
 
+    data.forEach((errander) => {
+      if (errander.slug) fetchShares(errander.slug);
+    });
+  }, [data]);
 
-  ///get shares 
-
-
+  // Fetch clicks for each errander (assuming a per-profile clicks endpoint)
   useEffect(() => {
-    const fetchShares = async() => {
-        try {
-            const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/shares`);
-            setShares(response.data.shareCount || 0 )
-            
-            console.log(response.data.shareCount)
-        } catch (error) {
-            console.log("failed to fetch share",error)
-        }
+    const fetchClicks = async (slug) => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/get-clicks/${slug}`);
+        setClickCounts((prev) => ({
+          ...prev,
+          [slug]: response.data.clicks || 0,
+        }));
+        console.log(response.data.clicks, "clicks")
+        setClicks(response.data.clicks)
+      } catch (error) {
+        console.log(`Failed to fetch clicks for ${slug}:`, error);
+        toast.error(`Failed to fetch clicks for ${slug}`, {
+          style: { background: 'white', color: 'red' },
+        });
+      }
+    };
+
+    data.forEach((errander) => {
+      if (errander.slug) fetchClicks(errander.slug);
+    });
+  }, [data]);
+
+  ///fetch comments 
+//   useEffect(() => {
+//     const fetchComments = async (slug) => {
+//       try {
+//         setLoading(true);
+//         setError(null);
+//         const response = await axios.get(
+//           `${import.meta.env.VITE_BACKEND_URL}/api/profiles/${slug}/comments`
+//         );
+
+//         if (response.data.status) {
+//           setComments(response.data.data || []);
+//           if (response.data.data.length === 0) {
+//             toast.info("No comments yet for this profile", {
+//               style: { background: "#FFF", color: "black" },
+//             });
+//           }
+//         } else {
+//           throw new Error(response.data.message || "Failed to fetch comments");
+//         }
+//       } catch (err) {
+//         console.error("Error fetching comments:", err);
+//         setError(err.response?.data?.message || "Failed to load comments");
+//         toast.error(err.response?.data?.message || "Failed to load comments", {
+//           style: { background: "#F44", color: "white" },
+//         });
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchComments()
+ 
+//   }, [data]);
+
+  // Post shares for a specific errander
+  const handleShareClick = async (slug) => {
+    try {
+      setShareCounts((prev) => ({
+        ...prev,
+        [slug]: prev[slug] + 1,
+      }));
+
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/shares`);
+      if (response.data && response.data.shareCount) {
+        setShareCounts((prev) => ({
+          ...prev,
+          [slug]: response.data.shareCount,
+        }));
+      }
+    } catch (error) {
+      console.error(`Failed to record share for ${slug}:`, error);
+      setShareCounts((prev) => ({
+        ...prev,
+        [slug]: prev[slug] - 1,
+      }));
+      toast.error('Failed to record share. Please try again.', {
+        style: { background: 'red', color: 'white' },
+      });
     }
-    fetchShares()
-  }, [slug])
-  
+  };
+
+  if (loading) {
+    return <div className="text-center py-10 text-gray-600">Loading erranders...</div>;
+  }
 
   return (
     <div className=" bg-gray-100 p-6">
@@ -101,76 +189,96 @@ const AllErrander = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.map((dat, index) => (
               <div
-                key={index}
+                key={dat._id || index}
                 className="bg-white p-6 rounded-lg shadow-md flex flex-col space-y-4"
               >
                 {/* Errander Details */}
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <p className="text-gray-800 font-semibold">
-                    Name: <span className="font-normal">{dat.userId?.firstName || 'James Johnson'} {dat.userId?.lastName || 'James Johnson'}</span>
+                    Name:{' '}
+                    <span className="font-normal">
+                      {dat.userId?.firstName || 'James'} {dat.userId?.lastName || 'Johnson'}
+                    </span>
                   </p>
                   <p className="text-gray-800 font-semibold">
-                    Age: <span className="font-normal">{dat.age }</span>
+                    Age: <span className="font-normal">{dat.age || 'N/A'}</span>
                   </p>
                   <p className="text-gray-800 font-semibold">
-                    Gender: <span className="font-normal">{dat.gender}</span>
+                    Gender: <span className="font-normal">{dat.gender || 'N/A'}</span>
                   </p>
                   <p className="text-gray-800 font-semibold">
-                    Location: <span className="font-normal">{dat.LGA }, {dat.state}</span>
+                    Location:{' '}
+                    <span className="font-normal">
+                      {dat.LGA || dat.userId?.lga || 'Unknown'}, {dat.state || 'Unknown'}
+                    </span>
                   </p>
-                  <p className={`${
-                    dat.userId?.verificationStatus === "verified" ? "text-green-400 bg-green-200 p-2 rounded-full" : dat.userId?.verificationStatus === "unverified" ? "text-red-white bg-red-400 p-2 rounded-full" : "text-black bg-yellow-300 p-2 rounded-full"
-                  }`}>
-                    verification-Status: <span className="font-normal">{dat.userId?.verificationStatus}</span>
+                  <p
+                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      dat.userId?.verificationStatus === 'verified'
+                        ? 'text-green-800 bg-green-200'
+                        : dat.userId?.verificationStatus === 'unverified'
+                        ? 'text-red-800 bg-red-200'
+                        : 'text-yellow-800 bg-yellow-200'
+                    }`}
+                  >
+                    Verification Status:{' '}
+                    <span className="font-normal">{dat.userId?.verificationStatus || 'Pending'}</span>
                   </p>
                 </div>
 
-                  <div className='flex flex-wrap space-x-4 rounded-full '>
-                  <DistanceBadge dat={{ LGA: dat.lga || dat.userId?.lga || dat.LGA }} />
-
+                {/* Distance Badge and View More Button */}
+                <div className="flex flex-wrap gap-4">
+                  <DistanceBadge dat={{ LGA: dat.userId?.lga || dat.lga || dat.LGA || 'Ikeja, Lagos' }} />
                   <Link to={`/profile/${dat.slug}`}>
-                  <button
-                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-                  onClick={async () => {
-                    try {
-                      await axios.post(
-                        `${import.meta.env.VITE_BACKEND_URL}/api/profile/${dat.slug}/click`
-                      );
-                      console.log("Click count incremented");
-                      toast.success("click counted", {
-                        style:{background: "white", color:"black"}
-                      })
-                    } catch (error) {
-                      console.error("Error incrementing click count:", error);
-                    }
-                  }}
-                >
-                  view more
-                </button>
+                    <button
+                      className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                      onClick={async () => {
+                        try {
+                          await axios.post(
+                            `${import.meta.env.VITE_BACKEND_URL}/api/profile/${dat.slug}/click`
+                          );
+                          setClickCounts((prev) => ({
+                            ...prev,
+                            [dat.slug]: prev[dat.slug] + 1,
+                          }));
+                          toast.success('Click counted', {
+                            style: { background: 'white', color: 'black' },
+                          });
+                        } catch (error) {
+                          console.error('Error incrementing click count:', error);
+                          toast.error('Failed to record click', {
+                            style: { background: 'white', color: 'red' },
+                          });
+                        }
+                      }}
+                    >
+                      View More
+                    </button>
                   </Link>
-
-                  </div>
-                {/* Distance Badge */}
-
+                </div>
 
                 {/* Stats and Share */}
                 <div className="flex items-center justify-between">
                   <div className="flex space-x-4">
                     <div className="flex items-center text-gray-600">
                       <FaBox className="mr-1 text-gray-500" />
-                      <span>{dat.delivered || '324'}</span>
+                      <span>{comments.length}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <FaThumbsUp className="mr-1 text-green-500" />
-                      <span>{clicks || '123'}</span>
+                      <span>{clicks || 0}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
                       <FaThumbsDown className="mr-1 text-red-500" />
-                      <span>{dat.negative || '123'}</span>
+                      <span>{dat.negative || 0}</span>
                     </div>
                   </div>
-                  <button className="text-gray-600 hover:text-gray-800">
-                    <FaShareAlt />
+                  <button
+                    onClick={() => handleShareClick(dat.slug)}
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaShareAlt className="mr-1" />
+                    <span>{shareCounts[dat.slug] || 0}</span>
                   </button>
                 </div>
               </div>
@@ -185,7 +293,6 @@ const AllErrander = () => {
 };
 
 export default AllErrander;
-
 
 
 
