@@ -765,10 +765,10 @@ function ErrandDashboard() {
                 </li>
                 <li>
                   <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
+                    to="/login"
+                    className="flex items-center text-red-600 hover:text-gray-800"
                   >
-                    <FaUser className="mr-3 text-gray-500" /> Details
+                    <FaUser className="mr-3 text-gray-500" /> Logout
                   </Link>
                 </li>
               </ul>

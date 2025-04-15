@@ -30,8 +30,8 @@ const AnimatedSection = ({ children }) => {
 const AllErrander = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [shareCounts, setShareCounts] = useState({}); // Track shares per errander
-  const [clickCounts, setClickCounts] = useState({}); // Track clicks per errander
+  const [shareCounts, setShareCounts] = useState({});
+  const [clickCounts, setClickCounts] = useState({}); 
   const [clicks, setClicks] = useState([])
   const [comments, setComments] = useState([])
   const [error,setError] = useState('')
@@ -116,39 +116,6 @@ const AllErrander = () => {
     });
   }, [data]);
 
-  ///fetch comments 
-//   useEffect(() => {
-//     const fetchComments = async (slug) => {
-//       try {
-//         setLoading(true);
-//         setError(null);
-//         const response = await axios.get(
-//           `${import.meta.env.VITE_BACKEND_URL}/api/profiles/${slug}/comments`
-//         );
-
-//         if (response.data.status) {
-//           setComments(response.data.data || []);
-//           if (response.data.data.length === 0) {
-//             toast.info("No comments yet for this profile", {
-//               style: { background: "#FFF", color: "black" },
-//             });
-//           }
-//         } else {
-//           throw new Error(response.data.message || "Failed to fetch comments");
-//         }
-//       } catch (err) {
-//         console.error("Error fetching comments:", err);
-//         setError(err.response?.data?.message || "Failed to load comments");
-//         toast.error(err.response?.data?.message || "Failed to load comments", {
-//           style: { background: "#F44", color: "white" },
-//         });
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-//     fetchComments()
- 
-//   }, [data]);
 
   // Post shares for a specific errander
   const handleShareClick = async (slug) => {
@@ -224,6 +191,13 @@ const AllErrander = () => {
                     Verification Status:{' '}
                     <span className="font-normal">{dat.userId?.verificationStatus || 'Pending'}</span>
                   </p>
+                  <Link to="/login">
+                  <button
+                        className='bg-green-400 p-2 rounded-md text-white ml-3'>
+                            book
+
+                        </button>
+                        </Link>
                 </div>
 
                 {/* Distance Badge and View More Button */}

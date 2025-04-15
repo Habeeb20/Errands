@@ -57,7 +57,7 @@ const Login = () => {
           toast.success(message || "Login successful! Redirecting to admin dashboard...");
     
           setTimeout(() => {
-            navigate("/erranderdashboard"); 
+            navigate(role === "errander" ? "/erranderdashboard" : "/userdashboard"); 
           }, 2000);
         } catch (error) {
           setLoading(false);

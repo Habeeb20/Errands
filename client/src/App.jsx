@@ -14,6 +14,10 @@ import ProfileForm from './Pages/ProfileForm';
 import ErrandDashboard from './Pages/Errander/ErranderDashboard';
 import Errander from './components/errander/Errander';
 import Profile from './Pages/Errander/Profile';
+import DashboardUser from './Pages/user/DashboardUser';
+import ErrandersInDashboard from './Pages/user/ErrandersInDashboard';
+import ProfileUser from './Pages/user/ProfileUser';
+
 const App = () => {
   return (
     <div>
@@ -45,6 +49,12 @@ const App = () => {
 
           <Route path="/erranderdashboard" element={<ErrandDashboard />} />
           <Route path="/profile" element={<Profile />} />
+
+
+          <Route path="/userdashboard" element={<DashboardUser />} />
+          <Route path="/errandersIndashboard" element={<ErrandersInDashboard />} />
+          <Route path="/userprofile" element={<ProfileUser />} />
+        
         </Routes>
       </Router>
       

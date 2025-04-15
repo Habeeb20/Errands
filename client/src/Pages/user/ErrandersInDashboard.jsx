@@ -1,0 +1,503 @@
+import { useEffect, useState, useRef } from 'react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FaBars, FaChartBar, FaHotel, FaCar, FaPlane, FaUser } from 'react-icons/fa';
+import Navbar from '../../components/Navbar';
+import { Link } from 'react-router-dom';
+import { motion, useInView } from 'framer-motion';
+import { FaShareAlt, FaBox, FaThumbsUp, FaThumbsDown, FaEye } from 'react-icons/fa';
+import DistanceBadge from '../../components/DistanceBadge';
+
+function ErrandersInDashboard() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [profile, setProfile] = useState({
+    userEmail: '',
+    age: '',
+    gender: '',
+    dateOfBirth: '',
+    state: '',
+    LGA: '',
+    address: '',
+    maritalStatus: '',
+    WDYD: '',
+    profilePicture: '',
+    driverLicense: '',
+    NIN: '',
+    medicalCondition: '',
+    alcoholUse: '',
+    height: '',
+    weight: '',
+    referenceAddress: '',
+    referenceContact: '',
+    referenceOccupation: '',
+    numberOfWives: '',
+    addressOfSpouse: '',
+    numberOfChildren: '',
+  });
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [shareCounts, setShareCounts] = useState({});
+  const [clickCounts, setClickCounts] = useState({});
+  const [clicks, setClicks] = useState([]);
+  const [comments, setComments] = useState([]);
+  const [expandedErrander, setExpandedErrander] = useState(null); // State to track which errander is expanded
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: 'easeOut' } },
+  };
+
+  const detailsVariants = {
+    hidden: { height: 0, opacity: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+    visible: { height: 'auto', opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
+  };
+
+  const AnimatedSection = ({ children }) => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, threshold: 0.2 });
+
+    return (
+      <motion.div
+        ref={ref}
+        initial="hidden"
+        animate={isInView ? 'visible' : 'hidden'}
+        variants={sectionVariants}
+      >
+        {children}
+      </motion.div>
+    );
+  };
+
+  useEffect(() => {
+    const fetchAllErranders = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/erranders`);
+        toast.success('Erranders are available', {
+          style: { background: 'white', color: 'black' },
+        });
+        setData(response.data.data || []);
+
+        // Initialize share and click counts
+        const initialShareCounts = {};
+        const initialClickCounts = {};
+        response.data.data.forEach((errander) => {
+          initialShareCounts[errander.slug] = 0;
+          initialClickCounts[errander.slug] = 0;
+        });
+        setShareCounts(initialShareCounts);
+        setClickCounts(initialClickCounts);
+      } catch (error) {
+        console.log('Error fetching erranders:', error);
+        toast.error('Error occurred while fetching erranders', {
+          style: { background: 'white', color: 'black' },
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllErranders();
+  }, []);
+
+  useEffect(() => {
+    const fetchShares = async (slug) => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/shares`);
+        setShareCounts((prev) => ({
+          ...prev,
+          [slug]: response.data.shareCount || 0,
+        }));
+      } catch (error) {
+        console.log(`Failed to fetch shares for ${slug}:`, error);
+        toast.error(`Failed to fetch shares for ${slug}`, {
+          style: { background: 'white', color: 'red' },
+        });
+      }
+    };
+
+    data.forEach((errander) => {
+      if (errander.slug) fetchShares(errander.slug);
+    });
+  }, [data]);
+
+  useEffect(() => {
+    const fetchClicks = async (slug) => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/get-clicks/${slug}`);
+        setClickCounts((prev) => ({
+          ...prev,
+          [slug]: response.data.clicks || 0,
+        }));
+        setClicks(response.data.clicks);
+      } catch (error) {
+        console.log(`Failed to fetch clicks for ${slug}:`, error);
+        toast.error(`Failed to fetch clicks for ${slug}`, {
+          style: { background: 'white', color: 'red' },
+        });
+      }
+    };
+
+    data.forEach((errander) => {
+      if (errander.slug) fetchClicks(errander.slug);
+    });
+  }, [data]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/auth/erranderdashboard`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setProfile(response.data?.profile || {});
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        toast.error('An error occurred while fetching profile data', {
+          style: { background: '#F44', color: 'white' },
+        });
+        if (error.response?.status === 401 || error.response?.status === 404) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [navigate]);
+
+  const handleShareClick = async (slug) => {
+    try {
+      setShareCounts((prev) => ({
+        ...prev,
+        [slug]: prev[slug] + 1,
+      }));
+
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/shares`);
+      if (response.data && response.data.shareCount) {
+        setShareCounts((prev) => ({
+          ...prev,
+          [slug]: response.data.shareCount,
+        }));
+      }
+    } catch (error) {
+      console.error(`Failed to record share for ${slug}:`, error);
+      setShareCounts((prev) => ({
+        ...prev,
+        [slug]: prev[slug] - 1,
+      }));
+      toast.error('Failed to record share. Please try again.', {
+        style: { background: 'red', color: 'white' },
+      });
+    }
+  };
+
+  const handleViewMoreClick = (slug) => {
+    // Toggle the expanded state for the clicked errander
+    setExpandedErrander(expandedErrander === slug ? null : slug);
+  };
+
+  return (
+    <>
+      <Navbar />
+      <div className="flex min-h-screen bg-gray-100 font-sans">
+        {/* Sidebar */}
+        <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg lg:w-1/5 p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center mb-8">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-900 rounded-md mr-2"></div>
+              <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
+            </div>
+            <nav>
+              <ul className="space-y-4">
+                <li>
+                  <Link
+                    to="/userdashboard"
+                    className={`flex items-center ${
+                      location.pathname === '/userdashboard' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    <FaChartBar className="mr-3 text-gray-500" /> Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="#"
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaChartBar className="mr-3 text-gray-500" /> Erranders
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/userprofile"
+                    className={`flex items-center ${
+                      location.pathname === '/userprofile' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    <FaHotel className="mr-3 text-gray-500" /> Profile
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="#"
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaCar className="mr-3 text-gray-500" /> Reports
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="#"
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaPlane className="mr-3 text-gray-500" /> Statistics
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/login"
+                    className="flex items-center text-red-600 hover:text-gray-800"
+                  >
+                    <FaUser className="mr-3 text-red-500" /> Logout
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
+          <div className="flex items-center">
+            <img
+              src={profile.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'}
+              alt="User"
+              className="w-10 h-10 rounded-full mr-3"
+            />
+            <div>
+              <p className="text-green-800">{profile?.userId?.email}</p>
+              <p className="text-gray-800 font-semibold">{profile?.userId?.firstName} {profile?.userId?.lastName}</p>
+              <Link to="#" className="text-gray-600 text-sm hover:underline">
+                Visit site
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 p-6 lg:p-8">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center">
+              <button
+                className="lg:hidden mr-4 text-gray-600"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              >
+                <FaBars size={24} />
+              </button>
+              <h2 className="text-2xl font-bold text-gray-800">Profile</h2>
+            </div>
+          </div>
+
+          <div className="ml-64 lg:ml-[20%] p-6 rounded-xl max-w-7xl mx-auto">
+            <AnimatedSection>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Available Erranders</h2>
+              {data && data.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {data.map((dat, index) => (
+                    <div
+                      key={dat._id || index}
+                      className="bg-white p-6 rounded-lg shadow-md flex flex-col space-y-4"
+                    >
+                      {/* Errander Details */}
+                      <div className="space-y-2">
+                      <div className="flex items-center mt-2">
+                <img
+                  src={dat.profilePicture || 'https://via.placeholder.com/50'}
+                  alt={`${dat.userId?.firstName}'s profile`}
+                  className="w-12 h-12 rounded-full mr-2"
+                />
+                <button
+                  onClick={() => window.open(dat.profilePicture || 'https://via.placeholder.com/50', '_blank')}
+                 
+                >
+                  <FaEye className="inline mr-1" /> View Picture
+                </button>
+              </div>
+                        <p className="text-gray-800 font-semibold">
+                          Name:{' '}
+                          <span className="font-normal">
+                            {dat.userId?.firstName || 'James'} {dat.userId?.lastName || 'Johnson'}
+                          </span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Age: <span className="font-normal">{dat.age || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Gender: <span className="font-normal">{dat.gender || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Location:{' '}
+                          <span className="font-normal">
+                            {dat.LGA || dat.userId?.lga || 'Unknown'}, {dat.state || 'Unknown'}
+                          </span>
+                        </p>
+                        <p
+                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                            dat.userId?.verificationStatus === 'verified'
+                              ? 'text-green-800 bg-green-200'
+                              : dat.userId?.verificationStatus === 'unverified'
+                              ? 'text-red-800 bg-red-200'
+                              : 'text-yellow-800 bg-yellow-200'
+                          }`}
+                        >
+                          Verification Status:{' '}
+                          <span className="font-normal">{dat.userId?.verificationStatus || 'Pending'}</span>
+                        </p>
+
+                        <button
+                        className='bg-green-400 p-2 rounded-md text-white ml-3'>
+                            book
+
+                        </button>
+                      </div>
+
+                      {/* Expanded Details (Animated) */}
+                      <motion.div
+                        initial="hidden"
+                        animate={expandedErrander === dat.slug ? 'visible' : 'hidden'}
+                        variants={detailsVariants}
+                        className="overflow-hidden space-y-2"
+                      >
+                        <p className="text-gray-800 font-semibold">
+                          Marital Status: <span className="font-normal">{dat.maritalStatus || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Email: <span className="font-normal">{dat.userId?.email || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Phone: <span className="font-normal">{dat.referenceContact || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Driver's License: <span className="font-normal">{dat.driverLicense || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          National Identification Number (NIN):{' '}
+                          <span className="font-normal">{dat.NIN || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Medical Condition: <span className="font-normal">{dat.medicalCondition || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Alcohol Use: <span className="font-normal">{dat.alcoholUse || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Height: <span className="font-normal">{dat.height || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Weight: <span className="font-normal">{dat.weight || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Reference Address: <span className="font-normal">{dat.referenceAddress || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Reference Occupation:{' '}
+                          <span className="font-normal">{dat.referenceOccupation || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Number of Wives: <span className="font-normal">{dat.numberOfWives || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Address of Spouse: <span className="font-normal">{dat.addressOfSpouse || 'N/A'}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Number of Children:{' '}
+                          <span className="font-normal">{dat.numberOfChildren || 'N/A'}</span>
+                        </p>
+                      </motion.div>
+
+                      {/* Distance Badge and View More Button */}
+                      <div className="flex flex-wrap gap-4">
+                        <DistanceBadge dat={{ LGA: dat.userId?.lga || dat.lga || dat.LGA || 'Ikeja, Lagos' }} />
+                        {/* <Link to={`/profile/${dat.slug}`}> */}
+                        <Link to="">
+                          <button
+                            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                            onClick={async (e) => {
+                              // Prevent navigation if we're just toggling the expanded view
+                              if (!expandedErrander) {
+                                e.preventDefault();
+                              }
+                              handleViewMoreClick(dat.slug); // Toggle expanded details
+                              try {
+                                await axios.post(
+                                  `${import.meta.env.VITE_BACKEND_URL}/api/profile/${dat.slug}/click`
+                                );
+                                setClickCounts((prev) => ({
+                                  ...prev,
+                                  [dat.slug]: prev[dat.slug] + 1,
+                                }));
+                                toast.success('Click counted', {
+                                  style: { background: 'white', color: 'black' },
+                                });
+                              } catch (error) {
+                                console.error('Error incrementing click count:', error);
+                                toast.error('Failed to record click', {
+                                  style: { background: 'white', color: 'red' },
+                                });
+                              }
+                            }}
+                          >
+                            {expandedErrander === dat.slug ? 'View Less' : 'View More'}
+                          </button>
+                        </Link>
+                      </div>
+
+                      {/* Stats and Share */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex space-x-4">
+                          <div className="flex items-center text-gray-600">
+                            <FaBox className="mr-1 text-gray-500" />
+                            <span>{comments.length}</span>
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <FaThumbsUp className="mr-1 text-green-500" />
+                            <span>{clicks || 0}</span>
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <FaThumbsDown className="mr-1 text-red-500" />
+                            <span>{dat.negative || 0}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleShareClick(dat.slug)}
+                          className="flex items-center text-gray-600 hover:text-gray-800"
+                        >
+                          <FaShareAlt className="mr-1" />
+                          <span>{shareCounts[dat.slug] || 0}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No erranders available at the moment.</p>
+              )}
+            </AnimatedSection>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default ErrandersInDashboard;

@@ -39,6 +39,7 @@ const ProfileForm = () => {
     state: "",
     LGA: "",
     maritalStatus: "",
+    phoneNumber : ""
   });
   const [loading, setLoading] = useState(false);
 
@@ -77,9 +78,9 @@ const ProfileForm = () => {
         style: { background: "#4CAF50", color: "white" },
       });
 
-      // Redirect to dashboard after success
+   
       setTimeout(() => {
-        navigate("/dashboard"); // Changed to /dashboard
+        navigate("/login"); 
       }, 2000);
     } catch (error) {
       setLoading(false);
@@ -168,6 +169,20 @@ const ProfileForm = () => {
           type="date"
           name="dateOfBirth"
           value={formData.dateOfBirth}
+          onChange={handleChange}
+          className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+          required
+          disabled={loading}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          phone Number<span className="text-red-500">*</span>
+        </label>
+        <input
+          type="number"
+          name="phoneNumber"
+          value={formData.phoneNumber}
           onChange={handleChange}
           className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
           required
@@ -295,6 +310,7 @@ const ProfileForm = () => {
         <h3 className="text-lg font-semibold mb-2">Review Your Information</h3>
         <p><strong>Email:</strong> {formData.userEmail}</p>
         <p><strong>Age:</strong> {formData.age}</p>
+        <p><strong>phone Number:</strong> {formData.phoneNumber}</p>
         <p><strong>Gender:</strong> {formData.gender}</p>
         <p><strong>Date of Birth:</strong> {formData.dateOfBirth}</p>
         <p><strong>Address:</strong> {formData.address}</p>

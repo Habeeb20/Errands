@@ -189,7 +189,7 @@ const Signup = () => {
                    />
                    Errander
                  </label>
-                 <label className="flex items-center">
+                 {/* <label className="flex items-center">
                    <input
                      type="radio"
                      value="admin"
@@ -199,7 +199,7 @@ const Signup = () => {
                      disabled={loading}
                    />
                    Admin
-                 </label>
+                 </label> */}
                </div>
                <button
                  type="submit"
