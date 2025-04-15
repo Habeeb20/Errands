@@ -45,7 +45,10 @@ function ErrandersInDashboard() {
   const [clickCounts, setClickCounts] = useState({});
   const [clicks, setClicks] = useState([]);
   const [comments, setComments] = useState([]);
-  const [expandedErrander, setExpandedErrander] = useState(null); // State to track which errander is expanded
+  const [expandedErrander, setExpandedErrander] = useState(null);
+  const [showModal, setShowModal] = useState(false); // State to control modal visibility
+  const [selectedErrander, setSelectedErrander] = useState(null); // Store the selected errander
+  const [distanceData, setDistanceData] = useState({ distance: null, fare: null }); // Store distance and fare
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -83,7 +86,6 @@ function ErrandersInDashboard() {
         });
         setData(response.data.data || []);
 
-        // Initialize share and click counts
         const initialShareCounts = {};
         const initialClickCounts = {};
         response.data.data.forEach((errander) => {
@@ -205,8 +207,47 @@ function ErrandersInDashboard() {
   };
 
   const handleViewMoreClick = (slug) => {
-    // Toggle the expanded state for the clicked errander
     setExpandedErrander(expandedErrander === slug ? null : slug);
+  };
+
+  const handleBookClick = async (errander) => {
+    setSelectedErrander(errander);
+    setShowModal(true);
+
+    // Calculate distance and fare
+    try {
+      const pickupAddress = `${profile.LGA || 'Unknown'}, ${profile.state || 'Unknown'}`;
+      const destinationAddress = `${errander.LGA || errander.userId?.lga || 'Unknown'}, ${errander.state || 'Unknown'}`;
+
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/errand/calculate-fare`, {
+        pickupAddress,
+        destinationAddress,
+      });
+
+      if (response.data.status) {
+        setDistanceData({
+          distance: response.data.distance,
+          fare: response.data.fare,
+        });
+      } else {
+        toast.error('Failed to calculate fare', {
+          style: { background: 'white', color: 'red' },
+        });
+      }
+    } catch (error) {
+      console.error('Error calculating fare:', error);
+      toast.error('Error calculating fare', {
+        style: { background: 'white', color: 'red' },
+      });
+    }
+  };
+
+  const handleContinue = () => {
+    setShowModal(false);
+    toast.success('Booking confirmed!', {
+      style: { background: 'white', color: 'black' },
+    });
+    // Add any additional logic for continuing the booking process here
   };
 
   return (
@@ -320,19 +361,18 @@ function ErrandersInDashboard() {
                     >
                       {/* Errander Details */}
                       <div className="space-y-2">
-                      <div className="flex items-center mt-2">
-                <img
-                  src={dat.profilePicture || 'https://via.placeholder.com/50'}
-                  alt={`${dat.userId?.firstName}'s profile`}
-                  className="w-12 h-12 rounded-full mr-2"
-                />
-                <button
-                  onClick={() => window.open(dat.profilePicture || 'https://via.placeholder.com/50', '_blank')}
-                 
-                >
-                  <FaEye className="inline mr-1" /> View Picture
-                </button>
-              </div>
+                        <div className="flex items-center mt-2">
+                          <img
+                            src={dat.profilePicture || 'https://via.placeholder.com/50'}
+                            alt={`${dat.userId?.firstName}'s profile`}
+                            className="w-12 h-12 rounded-full mr-2"
+                          />
+                          <button
+                            onClick={() => window.open(dat.profilePicture || 'https://via.placeholder.com/50', '_blank')}
+                          >
+                            <FaEye className="inline mr-1" /> View Picture
+                          </button>
+                        </div>
                         <p className="text-gray-800 font-semibold">
                           Name:{' '}
                           <span className="font-normal">
@@ -365,9 +405,10 @@ function ErrandersInDashboard() {
                         </p>
 
                         <button
-                        className='bg-green-400 p-2 rounded-md text-white ml-3'>
-                            book
-
+                          className="bg-green-400 p-2 rounded-md text-white ml-3"
+                          onClick={() => handleBookClick(dat)}
+                        >
+                          Book
                         </button>
                       </div>
 
@@ -428,16 +469,14 @@ function ErrandersInDashboard() {
                       {/* Distance Badge and View More Button */}
                       <div className="flex flex-wrap gap-4">
                         <DistanceBadge dat={{ LGA: dat.userId?.lga || dat.lga || dat.LGA || 'Ikeja, Lagos' }} />
-                        {/* <Link to={`/profile/${dat.slug}`}> */}
                         <Link to="">
                           <button
                             className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
                             onClick={async (e) => {
-                              // Prevent navigation if we're just toggling the expanded view
                               if (!expandedErrander) {
                                 e.preventDefault();
                               }
-                              handleViewMoreClick(dat.slug); // Toggle expanded details
+                              handleViewMoreClick(dat.slug);
                               try {
                                 await axios.post(
                                   `${import.meta.env.VITE_BACKEND_URL}/api/profile/${dat.slug}/click`
@@ -495,6 +534,63 @@ function ErrandersInDashboard() {
             </AnimatedSection>
           </div>
         </div>
+
+        {/* Modal for Google Map */}
+        {showModal && selectedErrander && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-2xl">
+              <h3>The distance between your registered LGA and the errander's LGA</h3>
+              <h4 className="text-xl font-semibold text-gray-800 mb-4">
+                Route from {profile.LGA || 'Unknown'}, {profile.state || 'Unknown'} to{' '}
+                {selectedErrander.LGA || selectedErrander.userId?.lga || 'Unknown'},{' '}
+                {selectedErrander.state || 'Unknown'}
+              </h4>
+              {/* Google Map Embed */}
+              <div className="w-full h-64 mb-4">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0 }}
+                  src={`https://www.google.com/maps/embed/v1/directions?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&origin=${encodeURIComponent(
+                    `${profile.LGA || 'Unknown'}, ${profile.state || 'Unknown'}`
+                  )}&destination=${encodeURIComponent(
+                    `${selectedErrander.LGA || selectedErrander.userId?.lga || 'Unknown'}, ${selectedErrander.state || 'Unknown'}`
+                  )}&mode=driving`}
+                  allowFullScreen
+                ></iframe>
+              </div>
+              {/* Distance and Fare */}
+              {distanceData.distance && distanceData.fare ? (
+                <div className="mb-4">
+                  <p className="text-gray-800 font-semibold">
+                    Distance: <span className="font-normal">{distanceData.distance} km</span>
+                  </p>
+                  <p className="text-gray-800 font-semibold">
+                    {/* Fare: <span className="font-normal">₦{distanceData.fare}</span> */}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-600 mb-4">Calculating distance and fare...</p>
+              )}
+              {/* Buttons */}
+              <div className="flex justify-end gap-4">
+                <button
+                  className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                  onClick={handleContinue}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
