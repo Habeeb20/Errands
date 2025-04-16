@@ -168,13 +168,13 @@ function Profile() {
           </Link>
         </li>
         <li>
-          <Link
-            to="#"
-            className="flex items-center text-gray-600 hover:text-gray-800"
-          >
-            <FaChartBar className="mr-3 text-gray-500" /> Errands
-          </Link>
-        </li>
+                  <Link
+                    to="/myerrands"
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaChartBar className="mr-3 text-gray-500" /> MyErranders
+                  </Link>
+                </li>
         <li>
           <Link
             to="/profile"
@@ -384,23 +384,45 @@ function Profile() {
                     <input
                       type="radio"
                       name="WDYD"
-                      value="Yes"
-                      checked={profile.WDYD === 'Yes'}
+                      value="bus"
+                      checked={profile.WDYD === 'bus'}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                     />
-                    Yes
+                    bus
                   </label>
                   <label>
                     <input
                       type="radio"
                       name="WDYD"
-                      value="No"
-                      checked={profile.WDYD === 'No'}
+                      value="car"
+                      checked={profile.WDYD === 'car'}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                     />
-                    No
+                    car
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="WDYD"
+                      value="bike"
+                      checked={profile.WDYD === 'bike'}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                    bike
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="WDYD"
+                      value="bicycle"
+                      checked={profile.WDYD === 'bicycle'}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                    bicycle
                   </label>
                 </div>
               </div>

@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import { useEffect, useState } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
@@ -20,6 +14,7 @@ function DashboardUser() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profile, setProfile] = useState({});
   const [clicks, setClicks] = useState(0); // State for clicks (views)
+  const [bookings, setBookings] = useState([]); // State for bookings
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,7 +27,7 @@ function DashboardUser() {
       }
 
       try {
-        // Fetch profile data (including comments)
+        // Fetch profile data
         const profileResponse = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/auth/erranderdashboard`,
           {
@@ -49,6 +44,15 @@ function DashboardUser() {
           );
           setClicks(clicksResponse.data.clicks || 0);
         }
+
+        // Fetch bookings (errands) data
+        const bookingsResponse = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/errand/history`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setBookings(bookingsResponse.data.history || []);
 
         toast.success('You are welcome back', {
           style: { background: '#4CAF50', color: 'white' },
@@ -68,22 +72,22 @@ function DashboardUser() {
     fetchData();
   }, [navigate]);
 
-  // Calculate statistics for comments and views
-  const totalComments = profile.comments?.length || 0;
+  // Calculate statistics for bookings and views
+  const totalBookings = bookings.length || 0;
   const totalViews = clicks || 0;
 
   // For simplicity, let's assume a baseline total for calculating percentages
-  const maxComments = 100; // Arbitrary max for comments to calculate percentage
+  const maxBookings = 100; // Arbitrary max for bookings to calculate percentage
   const maxViews = 1000;   // Arbitrary max for views to calculate percentage
-  const commentsPercentage = totalComments > 0 ? Math.round((totalComments / maxComments) * 100) : 0;
+  const bookingsPercentage = totalBookings > 0 ? Math.round((totalBookings / maxBookings) * 100) : 0;
   const viewsPercentage = totalViews > 0 ? Math.round((totalViews / maxViews) * 100) : 0;
 
-  // Data for Comments Doughnut Chart
-  const commentsData = {
-    labels: ['Comments'],
+  // Data for Bookings Doughnut Chart
+  const bookingsData = {
+    labels: ['Bookings'],
     datasets: [
       {
-        data: [commentsPercentage, 100 - commentsPercentage],
+        data: [bookingsPercentage, 100 - bookingsPercentage],
         backgroundColor: ['#4A90E2', '#E5E7EB'],
         borderWidth: 0,
       },
@@ -171,7 +175,7 @@ function DashboardUser() {
             </div>
             <div>
               <p className="text-gray-600">Bookings</p>
-              <p className="text-2xl font-bold text-gray-800">2,870</p>
+              <p className="text-2xl font-bold text-gray-800">{bookingsPercentage}</p>
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
@@ -189,15 +193,15 @@ function DashboardUser() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Section */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Comments and Views Cards */}
+            {/* Bookings and Views Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-xl shadow-md">
-                <p className="text-gray-600 mb-2">Total Comments</p>
-                <p className="text-2xl font-bold text-gray-800">{totalComments}</p>
-                <p className="text-gray-600">{commentsPercentage}%</p>
+                <p className="text-gray-600 mb-2">Total Bookings</p>
+                <p className="text-2xl font-bold text-gray-800">{totalBookings}</p>
+                <p className="text-gray-600">{bookingsPercentage}%</p>
                 <div className="mt-4 w-16 h-16">
                   <Doughnut
-                    data={commentsData}
+                    data={bookingsData}
                     options={{
                       cutout: '70%',
                       plugins: { legend: { display: false } },

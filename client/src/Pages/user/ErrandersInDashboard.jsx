@@ -7,7 +7,13 @@ import Navbar from '../../components/Navbar';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { FaShareAlt, FaBox, FaThumbsUp, FaThumbsDown, FaEye } from 'react-icons/fa';
+import { FaMotorcycle, FaBus, FaBicycle } from 'react-icons/fa';
 import DistanceBadge from '../../components/DistanceBadge';
+import io from 'socket.io-client';
+import { GoogleMap, Marker, useLoadScript, Autocomplete } from '@react-google-maps/api';
+
+// Initialize Socket.IO client
+const socket = io(import.meta.env.VITE_BACKEND_URL);
 
 function ErrandersInDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -46,9 +52,22 @@ function ErrandersInDashboard() {
   const [clicks, setClicks] = useState([]);
   const [comments, setComments] = useState([]);
   const [expandedErrander, setExpandedErrander] = useState(null);
-  const [showModal, setShowModal] = useState(false); // State to control modal visibility
-  const [selectedErrander, setSelectedErrander] = useState(null); // Store the selected errander
-  const [distanceData, setDistanceData] = useState({ distance: null, fare: null }); // Store distance and fare
+  const [showModal, setShowModal] = useState(false);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [selectedErrander, setSelectedErrander] = useState(null);
+  const [distanceData, setDistanceData] = useState({ distance: null, fare: null });
+  const [bookingDetails, setBookingDetails] = useState({
+    pickupAddress: '',
+    destinationAddress: '',
+    packageDescription: '',
+    packagePicture: '',
+    paymentMethod: 'cash',
+  });
+  const [history, setHistory] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [trackingErrand, setTrackingErrand] = useState(null);
+  const [erranderPosition, setErranderPosition] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -76,6 +95,44 @@ function ErrandersInDashboard() {
     );
   };
 
+  // Load Google Maps script with Places library
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: ['places'], // Required for Autocomplete
+  });
+
+  // References for Autocomplete inputs
+  const pickupAutocompleteRef = useRef(null);
+  const destinationAutocompleteRef = useRef(null);
+
+  const handleImageChange = (e) => {
+    setImageFile(e.target.files[0]);
+  };
+
+  const uploadImageToCloudinary = async () => {
+    if (!imageFile) return bookingDetails.packagePicture;
+
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    formData.append('upload_preset', 'essential');
+    formData.append('cloud_name', 'dc0poqt9l');
+
+    try {
+      const response = await axios.post(
+        'https://api.cloudinary.com/v1_1/dc0poqt9l/image/upload',
+        formData
+      );
+      return response.data.secure_url;
+    } catch (error) {
+      console.error('Error uploading image to Cloudinary:', error);
+      toast.error('Failed to upload profile picture', {
+        style: { background: '#F44', color: 'white' },
+      });
+      return bookingDetails.packagePicture;
+    }
+  };
+
+  // Fetch all erranders
   useEffect(() => {
     const fetchAllErranders = async () => {
       try {
@@ -106,6 +163,7 @@ function ErrandersInDashboard() {
     fetchAllErranders();
   }, []);
 
+  // Fetch shares for each errander
   useEffect(() => {
     const fetchShares = async (slug) => {
       try {
@@ -127,6 +185,7 @@ function ErrandersInDashboard() {
     });
   }, [data]);
 
+  // Fetch clicks for each errander
   useEffect(() => {
     const fetchClicks = async (slug) => {
       try {
@@ -149,6 +208,7 @@ function ErrandersInDashboard() {
     });
   }, [data]);
 
+  // Fetch user profile
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
@@ -180,6 +240,78 @@ function ErrandersInDashboard() {
     fetchProfile();
   }, [navigate]);
 
+  // Fetch history and notifications, and set up Socket.IO
+  useEffect(() => {
+    if (profile?.userId?._id) {
+      // Join Socket.IO room
+      socket.emit('join', profile.userId._id);
+
+      // Fetch history
+      const fetchHistory = async () => {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/errand/history`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          });
+          setHistory(response.data.history);
+        } catch (error) {
+          console.error('Error fetching history:', error);
+        }
+      };
+
+      // Fetch notifications
+      const fetchNotifications = async () => {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/errand/notifications`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          });
+          setNotifications(response.data.notifications);
+        } catch (error) {
+          console.error('Error fetching notifications:', error);
+        }
+      };
+
+      fetchHistory();
+      fetchNotifications();
+    }
+  }, [profile]);
+
+  // Socket.IO listeners
+  useEffect(() => {
+    socket.on('newErrand', (errand) => {
+      setHistory((prev) => [...prev, errand]);
+      toast.info('You have a new errand request!');
+    });
+
+    socket.on('errandUpdate', (errand) => {
+      setHistory((prev) =>
+        prev.map((e) => (e._id === errand._id ? errand : e))
+      );
+      if (errand.status === 'in_progress') {
+        setTrackingErrand(errand);
+      }
+      toast.info(`Errand status updated: ${errand.status}`);
+    });
+
+    socket.on('notification', (notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+      toast.info(notification.message);
+    });
+
+    socket.on('erranderLocation', ({ errandId, position }) => {
+      if (trackingErrand && trackingErrand._id === errandId) {
+        setErranderPosition(position);
+      }
+    });
+
+    return () => {
+      socket.off('newErrand');
+      socket.off('errandUpdate');
+      socket.off('notification');
+      socket.off('erranderLocation');
+    };
+  }, [trackingErrand]);
+
+  // Handle share click
   const handleShareClick = async (slug) => {
     try {
       setShareCounts((prev) => ({
@@ -206,22 +338,25 @@ function ErrandersInDashboard() {
     }
   };
 
-  const handleViewMoreClick = (slug) => {
-    setExpandedErrander(expandedErrander === slug ? null : slug);
-  };
-
+  // Handle book click
   const handleBookClick = async (errander) => {
     setSelectedErrander(errander);
-    setShowModal(true);
+    setShowBookingForm(true); // Open the booking form first to allow address input
+  };
 
-    // Calculate distance and fare
+  // Handle continue in the booking form
+  const handleContinue = async () => {
+    if (!bookingDetails.pickupAddress || !bookingDetails.destinationAddress) {
+      toast.error('Please provide both pickup and destination addresses', {
+        style: { background: 'white', color: 'red' },
+      });
+      return;
+    }
+
     try {
-      const pickupAddress = `${profile.LGA || 'Unknown'}, ${profile.state || 'Unknown'}`;
-      const destinationAddress = `${errander.LGA || errander.userId?.lga || 'Unknown'}, ${errander.state || 'Unknown'}`;
-
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/errand/calculate-fare`, {
-        pickupAddress,
-        destinationAddress,
+        pickupAddress: bookingDetails.pickupAddress,
+        destinationAddress: bookingDetails.destinationAddress,
       });
 
       if (response.data.status) {
@@ -229,6 +364,8 @@ function ErrandersInDashboard() {
           distance: response.data.distance,
           fare: response.data.fare,
         });
+        setShowBookingForm(false);
+        setShowModal(true);
       } else {
         toast.error('Failed to calculate fare', {
           style: { background: 'white', color: 'red' },
@@ -242,12 +379,183 @@ function ErrandersInDashboard() {
     }
   };
 
-  const handleContinue = () => {
-    setShowModal(false);
-    toast.success('Booking confirmed!', {
-      style: { background: 'white', color: 'black' },
-    });
-    // Add any additional logic for continuing the booking process here
+  // Handle booking form submission
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const packagePictureUrl = await uploadImageToCloudinary();
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/errand/create`,
+        {
+          erranderProfileId: selectedErrander._id,
+          pickupAddress: bookingDetails.pickupAddress,
+          destinationAddress: bookingDetails.destinationAddress,
+          packageDescription: bookingDetails.packageDescription,
+          packagePicture: packagePictureUrl,
+          distance: parseFloat(distanceData.distance),
+          calculatedPrice: distanceData.fare,
+          paymentMethod: bookingDetails.paymentMethod,
+        },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+
+      if (response.data.status) {
+        setShowModal(false);
+        setBookingDetails({
+          pickupAddress: '',
+          destinationAddress: '',
+          packageDescription: '',
+          packagePicture: '',
+          paymentMethod: 'cash',
+        });
+        setImageFile(null);
+        setDistanceData({ distance: null, fare: null });
+        toast.success('Errand booked successfully!', {
+          style: { background: 'white', color: 'black' },
+        });
+      }
+    } catch (error) {
+      console.error('Error booking errand:', error);
+      toast.error('Failed to book errand', {
+        style: { background: 'white', color: 'red' },
+      });
+    }
+  };
+
+  // Handle cancelling an errand
+  const handleCancelErrand = async (errandId) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/errand/${errandId}/cancel`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+      if (response.data.status) {
+        toast.success('Errand cancelled!', {
+          style: { background: 'white', color: 'black' },
+        });
+      }
+    } catch (error) {
+      console.error('Error cancelling errand:', error);
+      toast.error('Failed to cancel errand', {
+        style: { background: 'white', color: 'red' },
+      });
+    }
+  };
+
+  // Handle accepting an errand (for errander)
+  const handleAcceptErrand = async (errandId) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/errand/${errandId}/accept`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+      if (response.data.status) {
+        toast.success('Errand accepted!', {
+          style: { background: 'white', color: 'black' },
+        });
+      }
+    } catch (error) {
+      console.error('Error accepting errand:', error);
+      toast.error('Failed to accept errand', {
+        style: { background: 'white', color: 'red' },
+      });
+    }
+  };
+
+  // Handle rejecting an errand (for errander)
+  const handleRejectErrand = async (errandId) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/errand/${errandId}/reject`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+      if (response.data.status) {
+        toast.success('Errand rejected!', {
+          style: { background: 'white', color: 'black' },
+        });
+      }
+    } catch (error) {
+      console.error('Error rejecting errand:', error);
+      toast.error('Failed to reject errand', {
+        style: { background: 'white', color: 'red' },
+      });
+    }
+  };
+
+  // Handle starting an errand (for errander)
+  const handleStartErrand = async (errandId) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/errand/${errandId}/start`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+      if (response.data.status) {
+        toast.success('Errand started!', {
+          style: { background: 'white', color: 'black' },
+        });
+      }
+    } catch (error) {
+      console.error('Error starting errand:', error);
+      toast.error('Failed to start errand', {
+        style: { background: 'white', color: 'red' },
+      });
+    }
+  };
+
+  // Handle completing an errand (for errander)
+  const handleCompleteErrand = async (errandId) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/errand/${errandId}/complete`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        }
+      );
+      if (response.data.status) {
+        toast.success('Errand completed!', {
+          style: { background: 'white', color: 'black' },
+        });
+      }
+    } catch (error) {
+      console.error('Error completing errand:', error);
+      toast.error('Failed to complete errand', {
+        style: { background: 'white', color: 'red' },
+      });
+    }
+  };
+
+  // Handle Autocomplete place selection
+  const handlePlaceChanged = (type) => {
+    const autocomplete = type === 'pickup' ? pickupAutocompleteRef.current : destinationAutocompleteRef.current;
+    const place = autocomplete.getPlace();
+    if (place && place.formatted_address) {
+      setBookingDetails((prev) => ({
+        ...prev,
+        [type === 'pickup' ? 'pickupAddress' : 'destinationAddress']: place.formatted_address,
+      }));
+    }
+  };
+
+  // Handle view more click
+  const handleViewMoreClick = (slug) => {
+    setExpandedErrander(expandedErrander === slug ? null : slug);
   };
 
   return (
@@ -350,6 +658,27 @@ function ErrandersInDashboard() {
           </div>
 
           <div className="ml-64 lg:ml-[20%] p-6 rounded-xl max-w-7xl mx-auto">
+            {/* Notifications Section */}
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Notifications</h3>
+              {notifications.length > 0 ? (
+                <ul className="space-y-2">
+                  {notifications.map((notification) => (
+                    <li
+                      key={notification._id}
+                      className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center"
+                    >
+                      <span>{notification.message}</span>
+                      <span className="text-gray-500 text-sm">{new Date(notification.createdAt).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No notifications available.</p>
+              )}
+            </div>
+
+            {/* Available Erranders Section */}
             <AnimatedSection>
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Available Erranders</h2>
               {data && data.length > 0 ? (
@@ -359,7 +688,6 @@ function ErrandersInDashboard() {
                       key={dat._id || index}
                       className="bg-white p-6 rounded-lg shadow-md flex flex-col space-y-4"
                     >
-                      {/* Errander Details */}
                       <div className="space-y-2">
                         <div className="flex items-center mt-2">
                           <img
@@ -391,6 +719,22 @@ function ErrandersInDashboard() {
                             {dat.LGA || dat.userId?.lga || 'Unknown'}, {dat.state || 'Unknown'}
                           </span>
                         </p>
+                        <p className="text-gray-800 font-semibold flex items-center">
+                          Vehicle:{' '}
+                          <span className="font-normal flex items-center ml-1">
+                            {dat.WDYD ? (
+                              <>
+                                {dat.WDYD.toLowerCase() === 'bike' && <FaMotorcycle className="mr-1 text-gray-600" />}
+                                {dat.WDYD.toLowerCase() === 'bus' && <FaBus className="mr-1 text-gray-600" />}
+                                {dat.WDYD.toLowerCase() === 'car' && <FaCar className="mr-1 text-gray-600" />}
+                                {dat.WDYD.toLowerCase() === 'bicycle' && <FaBicycle className="mr-1 text-gray-600" />}
+                                {dat.WDYD}
+                              </>
+                            ) : (
+                              'Unknown'
+                            )}
+                          </span>
+                        </p>
                         <p
                           className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                             dat.userId?.verificationStatus === 'verified'
@@ -403,7 +747,6 @@ function ErrandersInDashboard() {
                           Verification Status:{' '}
                           <span className="font-normal">{dat.userId?.verificationStatus || 'Pending'}</span>
                         </p>
-
                         <button
                           className="bg-green-400 p-2 rounded-md text-white ml-3"
                           onClick={() => handleBookClick(dat)}
@@ -412,7 +755,6 @@ function ErrandersInDashboard() {
                         </button>
                       </div>
 
-                      {/* Expanded Details (Animated) */}
                       <motion.div
                         initial="hidden"
                         animate={expandedErrander === dat.slug ? 'visible' : 'hidden'}
@@ -466,7 +808,6 @@ function ErrandersInDashboard() {
                         </p>
                       </motion.div>
 
-                      {/* Distance Badge and View More Button */}
                       <div className="flex flex-wrap gap-4">
                         <DistanceBadge dat={{ LGA: dat.userId?.lga || dat.lga || dat.LGA || 'Ikeja, Lagos' }} />
                         <Link to="">
@@ -501,7 +842,6 @@ function ErrandersInDashboard() {
                         </Link>
                       </div>
 
-                      {/* Stats and Share */}
                       <div className="flex items-center justify-between">
                         <div className="flex space-x-4">
                           <div className="flex items-center text-gray-600">
@@ -532,6 +872,117 @@ function ErrandersInDashboard() {
                 <p className="text-gray-600">No erranders available at the moment.</p>
               )}
             </AnimatedSection>
+
+            {/* History Section */}
+            <div className="mt-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Errand History</h3>
+              {history.length > 0 ? (
+                <div className="space-y-4">
+                  {history.map((errand) => (
+                    <div
+                      key={errand._id}
+                      className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center"
+                    >
+                      <div>
+                        <p className="text-gray-800 font-semibold">
+                          Pickup: <span className="font-normal">{errand.pickupAddress}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Destination: <span className="font-normal">{errand.destinationAddress}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Status: <span className="font-normal">{errand.status}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Price: <span className="font-normal">₦{errand.calculatedPrice}</span>
+                        </p>
+                        {/* Client actions */}
+                        {errand.clientId === profile.userId._id && errand.status === 'pending' && (
+                          <button
+                            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition mt-2"
+                            onClick={() => handleCancelErrand(errand._id)}
+                          >
+                            Cancel Errand
+                          </button>
+                        )}
+                        {/* Errander actions */}
+                        {errand.erranderId === profile.userId._id && (
+                          <div className="flex gap-2 mt-2">
+                            {errand.status === 'pending' && (
+                              <>
+                                <button
+                                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                                  onClick={() => handleAcceptErrand(errand._id)}
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition"
+                                  onClick={() => handleRejectErrand(errand._id)}
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {errand.status === 'accepted' && (
+                              <button
+                                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+                                onClick={() => handleStartErrand(errand._id)}
+                              >
+                                Start Errand
+                              </button>
+                            )}
+                            {errand.status === 'in_progress' && (
+                              <button
+                                className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                                onClick={() => handleCompleteErrand(errand._id)}
+                              >
+                                Complete Errand
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {/* Client tracking */}
+                      {errand.clientId === profile.userId._id && errand.status === 'in_progress' && (
+                        <button
+                          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+                          onClick={() => setTrackingErrand(errand)}
+                        >
+                          Track Errand
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">No errand history available.</p>
+              )}
+            </div>
+
+            {/* Tracking Modal */}
+            {trackingErrand && isLoaded && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-2xl">
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Tracking Errand</h3>
+                  <GoogleMap
+                    mapContainerStyle={{ width: '100%', height: '400px' }}
+                    center={erranderPosition || { lat: 6.5244, lng: 3.3792 }}
+                    zoom={10}
+                  >
+                    {erranderPosition && <Marker position={erranderPosition} />}
+                  </GoogleMap>
+                  <div className="flex justify-end gap-4 mt-4">
+                    <button
+                      className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition"
+                      onClick={() => setTrackingErrand(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -539,13 +990,10 @@ function ErrandersInDashboard() {
         {showModal && selectedErrander && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-2xl">
-              <h3>The distance between your registered LGA and the errander's LGA</h3>
+              <h3>The distance between your pickup and destination addresses</h3>
               <h4 className="text-xl font-semibold text-gray-800 mb-4">
-                Route from {profile.LGA || 'Unknown'}, {profile.state || 'Unknown'} to{' '}
-                {selectedErrander.LGA || selectedErrander.userId?.lga || 'Unknown'},{' '}
-                {selectedErrander.state || 'Unknown'}
+                Route from {bookingDetails.pickupAddress} to {bookingDetails.destinationAddress}
               </h4>
-              {/* Google Map Embed */}
               <div className="w-full h-64 mb-4">
                 <iframe
                   width="100%"
@@ -553,41 +1001,138 @@ function ErrandersInDashboard() {
                   frameBorder="0"
                   style={{ border: 0 }}
                   src={`https://www.google.com/maps/embed/v1/directions?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&origin=${encodeURIComponent(
-                    `${profile.LGA || 'Unknown'}, ${profile.state || 'Unknown'}`
+                    bookingDetails.pickupAddress
                   )}&destination=${encodeURIComponent(
-                    `${selectedErrander.LGA || selectedErrander.userId?.lga || 'Unknown'}, ${selectedErrander.state || 'Unknown'}`
+                    bookingDetails.destinationAddress
                   )}&mode=driving`}
                   allowFullScreen
                 ></iframe>
               </div>
-              {/* Distance and Fare */}
               {distanceData.distance && distanceData.fare ? (
                 <div className="mb-4">
                   <p className="text-gray-800 font-semibold">
                     Distance: <span className="font-normal">{distanceData.distance} km</span>
                   </p>
                   <p className="text-gray-800 font-semibold">
-                    {/* Fare: <span className="font-normal">₦{distanceData.fare}</span> */}
+                    Fare: <span className="font-normal">₦{distanceData.fare}</span>
                   </p>
                 </div>
               ) : (
                 <p className="text-gray-600 mb-4">Calculating distance and fare...</p>
               )}
-              {/* Buttons */}
               <div className="flex justify-end gap-4">
                 <button
                   className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setShowBookingForm(true);
+                  }}
                 >
-                  Cancel
+                  Back
                 </button>
                 <button
                   className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
-                  onClick={handleContinue}
+                  onClick={handleBookingSubmit}
                 >
-                  Continue
+                  Confirm Booking
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Booking Form Modal */}
+        {showBookingForm && selectedErrander && isLoaded && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-md">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Complete Your Booking</h3>
+              <form onSubmit={(e) => e.preventDefault()}>
+                <div className="mb-4">
+                  <label className="block text-gray-800 font-semibold mb-2">Pickup Address</label>
+                  <Autocomplete
+                    onLoad={(autocomplete) => (pickupAutocompleteRef.current = autocomplete)}
+                    onPlaceChanged={() => handlePlaceChanged('pickup')}
+                  >
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter pickup address"
+                      value={bookingDetails.pickupAddress}
+                      onChange={(e) =>
+                        setBookingDetails({ ...bookingDetails, pickupAddress: e.target.value })
+                      }
+                      required
+                    />
+                  </Autocomplete>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-800 font-semibold mb-2">Destination Address</label>
+                  <Autocomplete
+                    onLoad={(autocomplete) => (destinationAutocompleteRef.current = autocomplete)}
+                    onPlaceChanged={() => handlePlaceChanged('destination')}
+                  >
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter destination address"
+                      value={bookingDetails.destinationAddress}
+                      onChange={(e) =>
+                        setBookingDetails({ ...bookingDetails, destinationAddress: e.target.value })
+                      }
+                      required
+                    />
+                  </Autocomplete>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-800 font-semibold mb-2">Package Description</label>
+                  <textarea
+                    className="w-full p-2 border rounded-md"
+                    value={bookingDetails.packageDescription}
+                    onChange={(e) =>
+                      setBookingDetails({ ...bookingDetails, packageDescription: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-800 font-semibold mb-2">Package Picture (Optional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-gray-800 font-semibold mb-2">Payment Method</label>
+                  <select
+                    className="w-full p-2 border rounded-md"
+                    value={bookingDetails.paymentMethod}
+                    onChange={(e) =>
+                      setBookingDetails({ ...bookingDetails, paymentMethod: e.target.value })
+                    }
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="transfer">Transfer</option>
+                  </select>
+                </div>
+                <div className="flex justify-end gap-4">
+                  <button
+                    type="button"
+                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition"
+                    onClick={() => setShowBookingForm(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                    onClick={handleContinue}
+                  >
+                    Continue
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
