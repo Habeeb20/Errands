@@ -253,6 +253,7 @@ function ErrandersInDashboard() {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           });
           setHistory(response.data.history);
+          console.log(response.data.history, "historyv")
         } catch (error) {
           console.error('Error fetching history:', error);
         }
@@ -265,6 +266,7 @@ function ErrandersInDashboard() {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           });
           setNotifications(response.data.notifications);
+          console.log(response.data.notifications, "notifications")
         } catch (error) {
           console.error('Error fetching notifications:', error);
         }
@@ -668,7 +670,7 @@ function ErrandersInDashboard() {
                       key={notification._id}
                       className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center"
                     >
-                      <span>{notification.message}</span>
+                      <span>{notification.message} <span className='space-x-5 font-semibold text-green-500'>({notification.erranderId?.firstName} {notification.erranderId?.lastName} {notification.erranderId?.email})</span></span>
                       <span className="text-gray-500 text-sm">{new Date(notification.createdAt).toLocaleString()}</span>
                     </li>
                   ))}
@@ -884,13 +886,37 @@ function ErrandersInDashboard() {
                       className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center"
                     >
                       <div>
+                      <div className="flex items-center mt-2">
+                          <img
+                            src={errand.errander?.profilePicture || 'https://via.placeholder.com/50'}
+                            alt={`${errand.erranderId?.firstName}'s profile`}
+                            className="w-12 h-12 rounded-full mr-2"
+                          />
+                          <button
+                            onClick={() => window.open(errand.errander?.profilePicture || 'https://via.placeholder.com/50', '_blank')}
+                          >
+                            <FaEye className="inline mr-1" /> View Picture
+                          </button>
+                        </div>
+                      <p className="text-gray-800 font-semibold">
+                          Errander Name: <span className="font-normal">{errand.erranderId?.firstName} {errand.clientId?.lastName}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Errander phone-Number: <span className="font-normal">{errand.erranderId?.phone} </span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Errander email: <span className="font-normal">{errand.erranderId?.email} </span>
+                        </p>
+                        <p className="text-green-800 font-semibold">
+                          Errander unique-Number: <span className="font-normal">{errand.erranderId?.uniqueNumber} </span>
+                        </p>
                         <p className="text-gray-800 font-semibold">
                           Pickup: <span className="font-normal">{errand.pickupAddress}</span>
                         </p>
                         <p className="text-gray-800 font-semibold">
                           Destination: <span className="font-normal">{errand.destinationAddress}</span>
                         </p>
-                        <p className="text-gray-800 font-semibold">
+                        <p className={`{text-gray-800 font-semibold ${errand.status === "accepted" ? "text-green-500 font-semibold" : "text-yellow=400"}}`}>
                           Status: <span className="font-normal">{errand.status}</span>
                         </p>
                         <p className="text-gray-800 font-semibold">

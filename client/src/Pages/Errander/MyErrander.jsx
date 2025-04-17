@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaBars, FaChartBar, FaHotel, FaCar, FaPlane, FaUser } from 'react-icons/fa';
+import { FaBars, FaChartBar, FaHotel, FaCar, FaPlane, FaUser, FaEye  } from 'react-icons/fa';
 import Navbar from '../../components/Navbar';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
@@ -122,7 +122,7 @@ function MyErrander() {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           });
           const erranderBookings = response.data.history.filter(
-            (booking) => booking.erranderId === profile.userId._id
+            (booking) => booking.erranderId._id === profile.userId._id
           );
           setBookings(erranderBookings);
           setHistory(erranderBookings);
@@ -500,6 +500,22 @@ function MyErrander() {
                         <p className="text-gray-800 font-semibold">
                           Package: <span className="font-normal">{booking.packageDescription}</span>
                         </p>
+                      
+
+                              <div className="flex items-center mt-2">
+                                                      <img
+                                                        src={booking.packagePicture || 'https://via.placeholder.com/50'}
+                                                        alt={`${booking.clientId?.firstName}'s profile`}
+                                                        className="w-12 h-12 rounded-full mr-2"
+                                                      />
+                                                      <button
+                                                        onClick={() => window.open(booking.packagePicture || 'https://via.placeholder.com/50', '_blank')}
+                                                      >
+                                                        <FaEye className="inline mr-1" /> View Picture
+                                                      </button>
+                                                    </div>
+                            
+                   
                         <p className="text-gray-800 font-semibold">
                           Price: <span className="font-normal">₦{booking.calculatedPrice}</span>
                         </p>

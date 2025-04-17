@@ -90,7 +90,7 @@ function ErrandDashboard() {
               headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             });
             const erranderBookings = response.data.history.filter(
-              (booking) => booking.erranderId === profile.userId._id
+              (booking) => booking.erranderId._id === profile.userId._id
             );
             setBookings(erranderBookings);
 
@@ -336,13 +336,13 @@ function ErrandDashboard() {
     acceptedErrands.map((accept) => (
       <img
         key={accept._id}
-        src={accept.client?.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'} // Fallback image
-        alt={`${accept.client?.firstName || 'Traveler'} ${accept.client?.lastName || ''}`} // Dynamic alt text
+        src={accept.client?.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'} 
+        alt={`${accept.client?.firstName || 'Traveler'} ${accept.client?.lastName || ''}`} 
         className="w-10 h-10 rounded-full"
       />
     ))
   ) : (
-    <p className="text-gray-600">No clients yet</p> // Adjusted styling for consistency
+    <p className="text-gray-600">No clients yet</p> 
   )}
 </div>
             </div>
