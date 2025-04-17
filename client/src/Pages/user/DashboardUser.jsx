@@ -106,19 +106,52 @@ function DashboardUser() {
     ],
   };
 
-  // Data for Errands Metrics (Donut Chart)
+  // Calculate data for Spend Breakdowns (Donut Chart)
+  // Filter bookings where the user is the client
+  const userBookings = bookings.filter(booking => booking.clientId._id === profile.userId?._id);
+  const totalUserBookings = userBookings.length;
+
+  // Calculate counts for each category
+  const acceptedBookings = userBookings.filter(booking => booking.status === 'accepted' || booking.status === 'in_progress').length;
+  const canceledBookings = userBookings.filter(booking => booking.status === 'canceled').length; // Assuming 'canceled' status for user cancellations
+  const completedBookings = userBookings.filter(booking => booking.status === 'completed').length;
+
+  // Calculate percentages (ensure they sum to 100%)
+  const totalCategories = acceptedBookings + canceledBookings + completedBookings;
+  const acceptedPercentage = totalUserBookings > 0 ? Math.round((acceptedBookings / totalUserBookings) * 100) : 0;
+  const totalBookingsPercentage = totalUserBookings > 0 ? Math.round((totalUserBookings / totalUserBookings) * 100) : 0; // Always 100% for total bookings
+  const canceledPercentage = totalUserBookings > 0 ? Math.round((canceledBookings / totalUserBookings) * 100) : 0;
+  const completedPercentage = totalUserBookings > 0 ? Math.round((completedBookings / totalUserBookings) * 100) : 0;
+
+  // Adjust percentages to sum to 100% (excluding total bookings percentage since it's the base)
+  const totalOtherCategories = acceptedPercentage + canceledPercentage + completedPercentage;
+  const normalizedAcceptedPercentage = totalOtherCategories > 0 ? Math.round((acceptedBookings / totalOtherCategories) * 100) : 0;
+  const normalizedCanceledPercentage = totalOtherCategories > 0 ? Math.round((canceledBookings / totalOtherCategories) * 100) : 0;
+  const normalizedCompletedPercentage = totalOtherCategories > 0 ? Math.round((completedBookings / totalOtherCategories) * 100) : 0;
+  const normalizedTotalBookingsPercentage = 100 - (normalizedAcceptedPercentage + normalizedCanceledPercentage + normalizedCompletedPercentage);
+
   const errandsData = {
-    labels: ['Errands Delivered', 'Positive Rating', 'Negative Rating', 'Available Errands'],
+    labels: ['Accepted by Erranders', 'Total Bookings Made', 'Canceled Bookings', 'Completed Bookings'],
     datasets: [
       {
-        data: [43, 30, 15, 12], // Example percentages
-        backgroundColor: ['#4A90E2', '#50C878', '#FF6B6B', '#F5E050'],
+        data: [
+          normalizedAcceptedPercentage,
+          normalizedTotalBookingsPercentage,
+          normalizedCanceledPercentage,
+          normalizedCompletedPercentage
+        ],
+        backgroundColor: ['#4A90E2', '#50C878', '#FF6B6B', '#F5E050'], // Blue, Green, Red, Yellow
         borderWidth: 0,
       },
     ],
   };
 
-  // Data for Today Report (Bar Chart)
+  // Calculate data for Travelers section
+  const acceptedBookingsWithErranders = userBookings.filter(booking => booking.status === 'accepted' || booking.status === 'in_progress');
+  const uniqueErranders = [...new Set(acceptedBookingsWithErranders.map(booking => booking.erranderId._id))]
+    .map(id => acceptedBookingsWithErranders.find(booking => booking.erranderId._id === id).errander);
+
+  // Data for Today Report (Bar Chart) - unchanged
   const todayReportData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr'],
     datasets: [
@@ -165,8 +198,8 @@ function DashboardUser() {
               <FaUser className="text-green-600 text-2xl" />
             </div>
             <div>
-              <p className="text-gray-600">Travelers</p>
-              <p className="text-2xl font-bold text-gray-800">1,251</p>
+              <p className="text-gray-600">Erranders</p>
+              <p className="text-2xl font-bold text-gray-800">{uniqueErranders.length}</p>
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
@@ -256,21 +289,25 @@ function DashboardUser() {
 
           {/* Right Section */}
           <div className="space-y-6">
-            {/* Current Traveler */}
+            {/* Travelers (previously Current Traveler) */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Current Traveler</h3>
-                <span className="text-red-500 font-semibold">6,230 $</span>
+                <h3 className="text-lg font-semibold text-gray-800">Travelers</h3>
+                <span className="text-red-500 font-semibold">{uniqueErranders.length}</span>
               </div>
               <div className="flex space-x-2">
-                {[...Array(5)].map((_, i) => (
-                  <img
-                    key={i}
-                    src={`https://randomuser.me/api/portraits/men/${i + 1}.jpg`}
-                    alt="Traveler"
-                    className="w-10 h-10 rounded-full"
-                  />
-                ))}
+                {uniqueErranders.length > 0 ? (
+                  uniqueErranders.slice(0, 5).map((errander, i) => (
+                    <img
+                      key={i}
+                      src={errander.profilePicture || `https://randomuser.me/api/portraits/men/${i + 1}.jpg`}
+                      alt="Errander"
+                      className="w-10 h-10 rounded-full"
+                    />
+                  ))
+                ) : (
+                  <p className="text-gray-600">No erranders have accepted your bookings yet.</p>
+                )}
               </div>
             </div>
 
@@ -288,25 +325,25 @@ function DashboardUser() {
                   }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-800">43%</span>
+                  <span className="text-2xl font-bold text-gray-800">{normalizedAcceptedPercentage}%</span>
                 </div>
               </div>
               <div className="mt-4 space-y-2">
                 <div className="flex items-center">
                   <div className="w-4 h-4 bg-blue-500 rounded-full mr-2"></div>
-                  <span className="text-gray-600">Errands Delivered: 43%</span>
+                  <span className="text-gray-600">Accepted by Erranders: {normalizedAcceptedPercentage}%</span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
-                  <span className="text-gray-600">Positive Rating: 30%</span>
+                  <span className="text-gray-600">Total Bookings Made: {normalizedTotalBookingsPercentage}%</span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-4 h-4 bg-red-500 rounded-full mr-2"></div>
-                  <span className="text-gray-600">Negative Rating: 15%</span>
+                  <span className="text-gray-600">Canceled Bookings: {normalizedCanceledPercentage}%</span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-4 h-4 bg-yellow-400 rounded-full mr-2"></div>
-                  <span className="text-gray-600">Available Errands: 12%</span>
+                  <span className="text-gray-600">Completed Bookings: {normalizedCompletedPercentage}%</span>
                 </div>
               </div>
             </div>
@@ -395,7 +432,7 @@ function DashboardUser() {
               className="w-10 h-10 rounded-full mr-3"
             />
             <div>
-            <p className="text-green-800 ">{profile?.userId?.email}</p>
+              <p className="text-green-800">{profile?.userId?.email}</p>
               <p className="text-gray-800 font-semibold">{profile?.userId?.firstName} {profile?.userId?.lastName}</p>
               <Link to="#" className="text-gray-600 text-sm hover:underline">
                 Visit site
