@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaBars, FaChartBar, FaHotel, FaCar, FaPlane, FaUser, FaEye  } from 'react-icons/fa';
+import { FaBars, FaChartBar, FaHotel, FaCar, FaPlane, FaUser, FaEye } from 'react-icons/fa';
 import Navbar from '../../components/Navbar';
 import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
@@ -197,6 +197,52 @@ function MyErrander() {
     };
   }, [trackingErrand, profile]);
 
+  // Real-time location tracking for in_progress errands
+  useEffect(() => {
+    let watchId;
+    if (trackingErrand && trackingErrand.status === 'in_progress') {
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const newPosition = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            setErranderPosition(newPosition);
+            // Emit the location to the backend
+            socket.emit('updateLocation', {
+              userId: profile.userId._id,
+              errandId: trackingErrand._id,
+              position: newPosition,
+            });
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            toast.error('Failed to get your location', {
+              style: { background: 'white', color: 'red' },
+            });
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          }
+        );
+      } else {
+        toast.error('Geolocation is not supported by your browser', {
+          style: { background: 'white', color: 'red' },
+        });
+      }
+    }
+
+    // Cleanup on unmount or when tracking stops
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [trackingErrand, profile]);
+
   // Handle accepting an errand
   const handleAcceptErrand = async (errandId) => {
     try {
@@ -280,6 +326,9 @@ function MyErrander() {
         toast.success('Booking completed!', {
           style: { background: 'white', color: 'black' },
         });
+        // Stop tracking when errand is completed
+        setTrackingErrand(null);
+        setErranderPosition(null);
       }
     } catch (error) {
       console.error('Error completing booking:', error);
@@ -407,7 +456,8 @@ function MyErrander() {
                       key={notification._id}
                       className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center"
                     >
-                      <span>{notification.message}</span>
+                      {/* <span>{notification.message}</span> */}
+                      <span>You have a new errand request</span>
                       <span className="text-gray-500 text-sm">{new Date(notification.createdAt).toLocaleString()}</span>
                     </li>
                   ))}
@@ -416,46 +466,6 @@ function MyErrander() {
                 <p className="text-gray-600">No notifications available.</p>
               )}
             </div>
-
-            {/* Errander Profile Section */}
-            {/* <AnimatedSection>
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">My Profile</h2>
-              <div className="bg-white p-6 rounded-lg shadow-md flex flex-col space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center mt-2">
-                    <img
-                      src={profile.profilePicture || 'https://via.placeholder.com/50'}
-                      alt={`${profile.userId?.firstName}'s profile`}
-                      className="w-12 h-12 rounded-full mr-2"
-                    />
-                  </div>
-                  <p className="text-gray-800 font-semibold">
-                    Name:{' '}
-                    <span className="font-normal">
-                      {profile.userId?.firstName || 'James'} {profile.userId?.lastName || 'Johnson'}
-                    </span>
-                  </p>
-                  <p className="text-gray-800 font-semibold">
-                    Age: <span className="font-normal">{profile.age || 'N/A'}</span>
-                  </p>
-                  <p className="text-gray-800 font-semibold">
-                    Gender: <span className="font-normal">{profile.gender || 'N/A'}</span>
-                  </p>
-                  <p className="text-gray-800 font-semibold">
-                    Location:{' '}
-                    <span className="font-normal">
-                      {profile.LGA || profile.userId?.lga || 'Unknown'}, {profile.state || 'Unknown'}
-                    </span>
-                  </p>
-                  <p className="text-gray-800 font-semibold">
-                    Vehicle: <span className="font-normal">{profile.WDYD || 'Unknown'}</span>
-                  </p>
-                  <p className="text-gray-800 font-semibold">
-                    Email: <span className="font-normal">{profile.userId?.email || 'N/A'}</span>
-                  </p>
-                </div>
-              </div>
-            </AnimatedSection> */}
 
             {/* Errand History (Chats) Section */}
             <div className="mt-6">
@@ -489,7 +499,13 @@ function MyErrander() {
                     >
                       <div>
                         <p className="text-gray-800 font-semibold">
-                          Client : <span className="font-normal">{booking.clientId?.firstName}</span>
+                          Client: <span className="font-normal">{booking.clientId?.firstName} {booking.clientId?.lastName}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Client Phone Number: <span className="font-normal">{booking.clientId?.phone}</span>
+                        </p>
+                        <p className="text-gray-800 font-semibold">
+                          Client Email: <span className="font-normal">{booking.clientId?.email}</span>
                         </p>
                         <p className="text-gray-800 font-semibold">
                           Pickup: <span className="font-normal">{booking.pickupAddress}</span>
@@ -500,22 +516,18 @@ function MyErrander() {
                         <p className="text-gray-800 font-semibold">
                           Package: <span className="font-normal">{booking.packageDescription}</span>
                         </p>
-                      
-
-                              <div className="flex items-center mt-2">
-                                                      <img
-                                                        src={booking.packagePicture || 'https://via.placeholder.com/50'}
-                                                        alt={`${booking.clientId?.firstName}'s profile`}
-                                                        className="w-12 h-12 rounded-full mr-2"
-                                                      />
-                                                      <button
-                                                        onClick={() => window.open(booking.packagePicture || 'https://via.placeholder.com/50', '_blank')}
-                                                      >
-                                                        <FaEye className="inline mr-1" /> View Picture
-                                                      </button>
-                                                    </div>
-                            
-                   
+                        <div className="flex items-center mt-2">
+                          <img
+                            src={booking.packagePicture || 'https://via.placeholder.com/50'}
+                            alt={`${booking.clientId?.firstName}'s profile`}
+                            className="w-12 h-12 rounded-full mr-2"
+                          />
+                          <button
+                            onClick={() => window.open(booking.packagePicture || 'https://via.placeholder.com/50', '_blank')}
+                          >
+                            <FaEye className="inline mr-1" /> View Picture
+                          </button>
+                        </div>
                         <p className="text-gray-800 font-semibold">
                           Price: <span className="font-normal">₦{booking.calculatedPrice}</span>
                         </p>
@@ -529,7 +541,7 @@ function MyErrander() {
                           Created: <span className="font-normal">{new Date(booking.createdAt).toLocaleString()}</span>
                         </p>
                         {/* Errander actions */}
-                        {booking.erranderId === profile.userId._id && (
+                        {booking.erranderId._id === profile.userId._id && (
                           <div className="flex gap-2 mt-2">
                             {booking.status === 'pending' && (
                               <>
@@ -589,16 +601,37 @@ function MyErrander() {
                 <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-2xl">
                   <h3 className="text-xl font-bold text-gray-800 mb-4">Tracking Booking</h3>
                   <GoogleMap
-                    mapContainerStyle={{ width: '100%', height: '400px' }}
-                    center={erranderPosition || { lat: 6.5244, lng: 3.3792 }}
-                    zoom={10}
-                  >
-                    {erranderPosition && <Marker position={erranderPosition} />}
-                  </GoogleMap>
+  mapContainerStyle={{ width: '100%', height: '400px' }}
+  center={erranderPosition || (trackingErrand.pickupCoords || { lat: 6.5244, lng: 3.3792 })}
+  zoom={10}
+>
+  {erranderPosition && <Marker position={erranderPosition} label="Errander" />}
+  {trackingErrand.pickupCoords && (
+    <Marker
+      position={trackingErrand.pickupCoords}
+      label="Pickup"
+      icon={{
+        url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+      }}
+    />
+  )}
+  {trackingErrand.destinationCoords && (
+    <Marker
+      position={trackingErrand.destinationCoords}
+      label="Destination"
+      icon={{
+        url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      }}
+    />
+  )}
+</GoogleMap>
                   <div className="flex justify-end gap-4 mt-4">
                     <button
                       className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition"
-                      onClick={() => setTrackingErrand(null)}
+                      onClick={() => {
+                        setTrackingErrand(null);
+                        setErranderPosition(null);
+                      }}
                     >
                       Close
                     </button>

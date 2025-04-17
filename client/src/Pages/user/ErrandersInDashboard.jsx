@@ -68,6 +68,8 @@ function ErrandersInDashboard() {
   const [trackingErrand, setTrackingErrand] = useState(null);
   const [erranderPosition, setErranderPosition] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [isConfirming, setIsConfirming] = useState(false); // Loading state for Confirm Booking
+  const [isContinuing, setIsContinuing] = useState(false); // Loading state for Continue
 
   const sectionVariants = {
     hidden: { opacity: 0, y: 50 },
@@ -332,7 +334,7 @@ function ErrandersInDashboard() {
       console.error(`Failed to record share for ${slug}:`, error);
       setShareCounts((prev) => ({
         ...prev,
-        [slug]: prev[slug] - 1,
+        [slug]: prév[slug] - 1,
       }));
       toast.error('Failed to record share. Please try again.', {
         style: { background: 'red', color: 'white' },
@@ -355,16 +357,29 @@ function ErrandersInDashboard() {
       return;
     }
 
+    setIsContinuing(true); // Start loading
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Authentication token missing. Please log in again.', {
+        style: { background: 'white', color: 'red' },
+      });
+      navigate('/login');
+      return;
+    }
     try {
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/errand/calculate-fare`, {
         pickupAddress: bookingDetails.pickupAddress,
         destinationAddress: bookingDetails.destinationAddress,
-      });
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
       if (response.data.status) {
         setDistanceData({
-          distance: response.data.distance,
-          fare: response.data.fare,
+          distance: response.data.data?.distance,
+          fare: response.data.data?.fare,
         });
         setShowBookingForm(false);
         setShowModal(true);
@@ -378,14 +393,46 @@ function ErrandersInDashboard() {
       toast.error('Error calculating fare', {
         style: { background: 'white', color: 'red' },
       });
+    } finally {
+      setIsContinuing(false); // Stop loading
     }
   };
 
-  // Handle booking form submission
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+    setIsConfirming(true); // Start loading
 
     try {
+      if (!selectedErrander || !selectedErrander._id) {
+        toast.error('Please select an errander', {
+          style: { background: 'white', color: 'red' },
+        });
+        return;
+      }
+
+      if (!bookingDetails.pickupAddress || !bookingDetails.destinationAddress || !bookingDetails.packageDescription) {
+        toast.error('Please fill in all required fields', {
+          style: { background: 'white', color: 'red' },
+        });
+        return;
+      }
+
+      if (!distanceData.distance || !distanceData.fare) {
+        toast.error('Distance and fare must be calculated', {
+          style: { background: 'white', color: 'red' },
+        });
+        return;
+      }
+
+      const parsedDistance = parseFloat(distanceData.distance);
+      const parsedFare = parseFloat(distanceData.fare);
+      if (isNaN(parsedDistance) || isNaN(parsedFare)) {
+        toast.error('Invalid distance or fare value', {
+          style: { background: 'white', color: 'red' },
+        });
+        return;
+      }
+
       const packagePictureUrl = await uploadImageToCloudinary();
 
       const response = await axios.post(
@@ -395,10 +442,10 @@ function ErrandersInDashboard() {
           pickupAddress: bookingDetails.pickupAddress,
           destinationAddress: bookingDetails.destinationAddress,
           packageDescription: bookingDetails.packageDescription,
-          packagePicture: packagePictureUrl,
-          distance: parseFloat(distanceData.distance),
-          calculatedPrice: distanceData.fare,
-          paymentMethod: bookingDetails.paymentMethod,
+          packagePicture: packagePictureUrl || '',
+          distance: parsedDistance,
+          calculatedPrice: parsedFare,
+          paymentMethod: bookingDetails.paymentMethod.toLowerCase(),
         },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -422,9 +469,12 @@ function ErrandersInDashboard() {
       }
     } catch (error) {
       console.error('Error booking errand:', error);
-      toast.error('Failed to book errand', {
+      const errorMessage = error.response?.data?.message || 'Failed to book errand';
+      toast.error(errorMessage, {
         style: { background: 'white', color: 'red' },
       });
+    } finally {
+      setIsConfirming(false); // Stop loading
     }
   };
 
@@ -562,6 +612,25 @@ function ErrandersInDashboard() {
 
   return (
     <>
+      <style>
+        {`
+          .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 8px;
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
       <Navbar />
       <div className="flex min-h-screen bg-gray-100 font-sans">
         {/* Sidebar */}
@@ -1057,10 +1126,12 @@ function ErrandersInDashboard() {
                   Back
                 </button>
                 <button
-                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition flex items-center"
                   onClick={handleBookingSubmit}
+                  disabled={isConfirming}
                 >
                   Confirm Booking
+                  {isConfirming && <span className="spinner"></span>}
                 </button>
               </div>
             </div>
@@ -1152,10 +1223,12 @@ function ErrandersInDashboard() {
                   </button>
                   <button
                     type="button"
-                    className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition"
+                    className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition flex items-center"
                     onClick={handleContinue}
+                    disabled={isContinuing}
                   >
                     Continue
+                    {isContinuing && <span className="spinner"></span>}
                   </button>
                 </div>
               </form>

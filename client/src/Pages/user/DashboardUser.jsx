@@ -6,6 +6,11 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import io from 'socket.io-client';
+import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
+
+// Initialize Socket.IO client
+const socket = io(import.meta.env.VITE_BACKEND_URL);
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
@@ -13,10 +18,17 @@ ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearS
 function DashboardUser() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profile, setProfile] = useState({});
-  const [clicks, setClicks] = useState(0); // State for clicks (views)
-  const [bookings, setBookings] = useState([]); // State for bookings
+  const [clicks, setClicks] = useState(0);
+  const [bookings, setBookings] = useState([]);
+  const [trackingErrand, setTrackingErrand] = useState(null);
+  const [erranderPosition, setErranderPosition] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Load Google Maps script
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -27,7 +39,6 @@ function DashboardUser() {
       }
 
       try {
-        // Fetch profile data
         const profileResponse = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/auth/erranderdashboard`,
           {
@@ -37,7 +48,6 @@ function DashboardUser() {
         const profileData = profileResponse.data?.profile || {};
         setProfile(profileData);
 
-        // Fetch clicks (views) data
         if (profileData.slug) {
           const clicksResponse = await axios.get(
             `${import.meta.env.VITE_BACKEND_URL}/api/profile/get-clicks/${profileData.slug}`
@@ -45,7 +55,6 @@ function DashboardUser() {
           setClicks(clicksResponse.data.clicks || 0);
         }
 
-        // Fetch bookings (errands) data
         const bookingsResponse = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/errand/history`,
           {
@@ -72,17 +81,52 @@ function DashboardUser() {
     fetchData();
   }, [navigate]);
 
-  // Calculate statistics for bookings and views
+  // Socket.IO listeners for real-time updates
+  useEffect(() => {
+    if (profile?.userId?._id) {
+      socket.emit('join', profile.userId._id);
+
+      socket.on('errandUpdate', (errand) => {
+        if (errand.clientId._id === profile.userId._id) {
+          setBookings((prev) =>
+            prev.map((e) => (e._id === errand._id ? errand : e))
+          );
+          if (errand.status === 'in_progress') {
+            setTrackingErrand(errand);
+          } else if (errand.status === 'completed') {
+            setTrackingErrand(null);
+            setErranderPosition(null);
+          }
+          toast.info(`Your errand status updated: ${errand.status}`);
+        }
+      });
+
+      socket.on('notification', (notification) => {
+        toast.info(notification.message);
+      });
+
+      socket.on('erranderLocation', ({ errandId, position }) => {
+        if (trackingErrand && trackingErrand._id === errandId) {
+          setErranderPosition(position);
+        }
+      });
+
+      return () => {
+        socket.off('errandUpdate');
+        socket.off('notification');
+        socket.off('erranderLocation');
+      };
+    }
+  }, [profile, trackingErrand]);
+
   const totalBookings = bookings.length || 0;
   const totalViews = clicks || 0;
 
-  // For simplicity, let's assume a baseline total for calculating percentages
-  const maxBookings = 100; // Arbitrary max for bookings to calculate percentage
-  const maxViews = 1000;   // Arbitrary max for views to calculate percentage
+  const maxBookings = 100;
+  const maxViews = 1000;
   const bookingsPercentage = totalBookings > 0 ? Math.round((totalBookings / maxBookings) * 100) : 0;
   const viewsPercentage = totalViews > 0 ? Math.round((totalViews / maxViews) * 100) : 0;
 
-  // Data for Bookings Doughnut Chart
   const bookingsData = {
     labels: ['Bookings'],
     datasets: [
@@ -94,7 +138,6 @@ function DashboardUser() {
     ],
   };
 
-  // Data for Views Doughnut Chart
   const viewsData = {
     labels: ['Views'],
     datasets: [
@@ -106,29 +149,18 @@ function DashboardUser() {
     ],
   };
 
-  // Calculate data for Spend Breakdowns (Donut Chart)
-  // Filter bookings where the user is the client
   const userBookings = bookings.filter(booking => booking.clientId._id === profile.userId?._id);
   const totalUserBookings = userBookings.length;
 
-  // Calculate counts for each category
   const acceptedBookings = userBookings.filter(booking => booking.status === 'accepted' || booking.status === 'in_progress').length;
-  const canceledBookings = userBookings.filter(booking => booking.status === 'canceled').length; // Assuming 'canceled' status for user cancellations
+  const canceledBookings = userBookings.filter(booking => booking.status === 'canceled').length;
   const completedBookings = userBookings.filter(booking => booking.status === 'completed').length;
 
-  // Calculate percentages (ensure they sum to 100%)
-  const totalCategories = acceptedBookings + canceledBookings + completedBookings;
-  const acceptedPercentage = totalUserBookings > 0 ? Math.round((acceptedBookings / totalUserBookings) * 100) : 0;
-  const totalBookingsPercentage = totalUserBookings > 0 ? Math.round((totalUserBookings / totalUserBookings) * 100) : 0; // Always 100% for total bookings
-  const canceledPercentage = totalUserBookings > 0 ? Math.round((canceledBookings / totalUserBookings) * 100) : 0;
-  const completedPercentage = totalUserBookings > 0 ? Math.round((completedBookings / totalUserBookings) * 100) : 0;
-
-  // Adjust percentages to sum to 100% (excluding total bookings percentage since it's the base)
-  const totalOtherCategories = acceptedPercentage + canceledPercentage + completedPercentage;
+  const totalOtherCategories = acceptedBookings + canceledBookings + completedBookings;
   const normalizedAcceptedPercentage = totalOtherCategories > 0 ? Math.round((acceptedBookings / totalOtherCategories) * 100) : 0;
   const normalizedCanceledPercentage = totalOtherCategories > 0 ? Math.round((canceledBookings / totalOtherCategories) * 100) : 0;
   const normalizedCompletedPercentage = totalOtherCategories > 0 ? Math.round((completedBookings / totalOtherCategories) * 100) : 0;
-  const normalizedTotalBookingsPercentage = 100 - (normalizedAcceptedPercentage + normalizedCanceledPercentage + normalizedCompletedPercentage);
+  const normalizedTotalBookingsPercentage =totalUserBookings
 
   const errandsData = {
     labels: ['Accepted by Erranders', 'Total Bookings Made', 'Canceled Bookings', 'Completed Bookings'],
@@ -138,20 +170,18 @@ function DashboardUser() {
           normalizedAcceptedPercentage,
           normalizedTotalBookingsPercentage,
           normalizedCanceledPercentage,
-          normalizedCompletedPercentage
+          normalizedCompletedPercentage,
         ],
-        backgroundColor: ['#4A90E2', '#50C878', '#FF6B6B', '#F5E050'], // Blue, Green, Red, Yellow
+        backgroundColor: ['#4A90E2', '#50C878', '#FF6B6B', '#F5E050'],
         borderWidth: 0,
       },
     ],
   };
 
-  // Calculate data for Travelers section
   const acceptedBookingsWithErranders = userBookings.filter(booking => booking.status === 'accepted' || booking.status === 'in_progress');
   const uniqueErranders = [...new Set(acceptedBookingsWithErranders.map(booking => booking.erranderId._id))]
     .map(id => acceptedBookingsWithErranders.find(booking => booking.erranderId._id === id).errander);
 
-  // Data for Today Report (Bar Chart) - unchanged
   const todayReportData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr'],
     datasets: [
@@ -170,7 +200,6 @@ function DashboardUser() {
     ],
   };
 
-  // Conditionally render content based on the route
   const renderMainContent = () => {
     if (location.pathname === '/profile') {
       return <Profile />;
@@ -178,7 +207,6 @@ function DashboardUser() {
 
     return (
       <div className="flex-1 p-6 lg:p-8">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <button
@@ -191,7 +219,6 @@ function DashboardUser() {
           </div>
         </div>
 
-        {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
             <div className="p-4 bg-green-100 rounded-lg mr-4">
@@ -222,11 +249,8 @@ function DashboardUser() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Section */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Bookings and Views Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-xl shadow-md">
                 <p className="text-gray-600 mb-2">Total Bookings</p>
@@ -258,7 +282,6 @@ function DashboardUser() {
               </div>
             </div>
 
-            {/* Today Report */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800">Today Report</h3>
@@ -287,12 +310,10 @@ function DashboardUser() {
             </div>
           </div>
 
-          {/* Right Section */}
           <div className="space-y-6">
-            {/* Travelers (previously Current Traveler) */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Travelers</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Erranders</h3>
                 <span className="text-red-500 font-semibold">{uniqueErranders.length}</span>
               </div>
               <div className="flex space-x-2">
@@ -311,9 +332,8 @@ function DashboardUser() {
               </div>
             </div>
 
-            {/* Spend Breakdowns */}
             <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Spend Breakdowns</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Errands Breakdowns</h3>
               <div className="relative w-40 h-40 mx-auto">
                 <Doughnut
                   data={errandsData}
@@ -349,6 +369,51 @@ function DashboardUser() {
             </div>
           </div>
         </div>
+
+        {/* Tracking Modal for Client */}
+        {trackingErrand && isLoaded && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-2xl">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Tracking Your Errand</h3>
+              <GoogleMap
+  mapContainerStyle={{ width: '100%', height: '400px' }}
+  center={erranderPosition || (trackingErrand.pickupCoords || { lat: 6.5244, lng: 3.3792 })}
+  zoom={10}
+>
+  {erranderPosition && <Marker position={erranderPosition} label="Errander" />}
+  {trackingErrand.pickupCoords && (
+    <Marker
+      position={trackingErrand.pickupCoords}
+      label="Pickup"
+      icon={{
+        url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+      }}
+    />
+  )}
+  {trackingErrand.destinationCoords && (
+    <Marker
+      position={trackingErrand.destinationCoords}
+      label="Destination"
+      icon={{
+        url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      }}
+    />
+  )}
+</GoogleMap>
+              <div className="flex justify-end gap-4 mt-4">
+                <button
+                  className="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition"
+                  onClick={() => {
+                    setTrackingErrand(null);
+                    setErranderPosition(null);
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -357,7 +422,6 @@ function DashboardUser() {
     <>
       <Navbar />
       <div className="flex min-h-screen bg-gray-100 font-sans">
-        {/* Sidebar */}
         <div
           className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -441,7 +505,6 @@ function DashboardUser() {
           </div>
         </div>
 
-        {/* Main Content */}
         {renderMainContent()}
       </div>
     </>
