@@ -189,6 +189,17 @@ const Signup = () => {
                    />
                    Errander
                  </label>
+                 <label className="flex items-center">
+                   <input
+                     type="radio"
+                     value="messenger"
+                     checked={role === "messenger"}
+                     onChange={(e) => setRole(e.target.value)}
+                     className="mr-2"
+                     disabled={loading}
+                   />
+                   Messenger
+                 </label>
                  {/* <label className="flex items-center">
                    <input
                      type="radio"
