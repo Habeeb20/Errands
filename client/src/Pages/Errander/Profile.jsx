@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaBars, FaChartBar, FaHotel, FaCar, FaPlane, FaUser } from 'react-icons/fa';
 import Navbar from '../../components/Navbar';
 import { Link } from 'react-router-dom';
@@ -31,11 +31,21 @@ function Profile() {
     numberOfWives: '',
     addressOfSpouse: '',
     numberOfChildren: '',
+    jobsCanDo: [],
+    jobsCannotDo: [],
   });
-  const [isEditing, setIsEditing] = useState(true); // Start in edit mode
+  const [isEditing, setIsEditing] = useState(true);
   const [imageFile, setImageFile] = useState(null);
   const navigate = useNavigate();
-  const location = useLocation(); // Added to track the current route for sidebar highlighting
+  const location = useLocation();
+
+  // Define job options based on role
+  const role = profile?.userId?.role || 'Errander'; // Default to 'Errander' if role isn't available
+  const jobOptions = {
+    Messenger: ['Document Delivery', 'Package Delivery', 'Message Relay', 'Dry Cleaning', 'pick your ward in School' ],
+    Errander: ['Grocery Shopping', 'Pharmacy Pickup','package delivery', 'Dry Cleaning', 'run errands within state', 'run errands outside state'],
+  };
+  const availableJobs = jobOptions[role] || [];
 
   // Fetch the profile data on component mount
   useEffect(() => {
@@ -69,13 +79,41 @@ function Profile() {
     fetchProfile();
   }, [navigate]);
 
-  // Handle input changes
+  // Handle input changes for text fields
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfile((prevProfile) => ({
       ...prevProfile,
       [name]: value,
     }));
+  };
+
+  // Handle job selection changes
+  const handleJobChange = (job, value) => {
+    setProfile((prevProfile) => {
+      let newJobsCanDo = [...prevProfile.jobsCanDo];
+      let newJobsCannotDo = [...prevProfile.jobsCannotDo];
+
+      if (value === 'canDo') {
+        // Add to jobsCanDo, remove from jobsCannotDo
+        if (!newJobsCanDo.includes(job)) {
+          newJobsCanDo.push(job);
+        }
+        newJobsCannotDo = newJobsCannotDo.filter((j) => j !== job);
+      } else if (value === 'cannotDo') {
+        // Add to jobsCannotDo, remove from jobsCanDo
+        if (!newJobsCannotDo.includes(job)) {
+          newJobsCannotDo.push(job);
+        }
+        newJobsCanDo = newJobsCanDo.filter((j) => j !== job);
+      }
+
+      return {
+        ...prevProfile,
+        jobsCanDo: newJobsCanDo,
+        jobsCannotDo: newJobsCannotDo,
+      };
+    });
   };
 
   // Handle image upload to Cloudinary
@@ -150,24 +188,24 @@ function Profile() {
       <div className="flex min-h-screen bg-gray-100 font-sans">
         {/* Sidebar */}
         <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg lg:w-1/5 p-6 flex flex-col justify-between">
-  <div>
-    <div className="flex items-center mb-8">
-      <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-md mr-2"></div>
-      <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
-    </div>
-    <nav>
-      <ul className="space-y-4">
-        <li>
-          <Link
-            to="/erranderdashboard"
-            className={`flex items-center ${
-              location.pathname === '/erranderdashboard' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <FaChartBar className="mr-3 text-gray-500" /> Dashboard
-          </Link>
-        </li>
-        <li>
+          <div>
+            <div className="flex items-center mb-8">
+              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-md mr-2"></div>
+              <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
+            </div>
+            <nav>
+              <ul className="space-y-4">
+                <li>
+                  <Link
+                    to="/erranderdashboard"
+                    className={`flex items-center ${
+                      location.pathname === '/erranderdashboard' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    <FaChartBar className="mr-3 text-gray-500" /> Dashboard
+                  </Link>
+                </li>
+                <li>
                   <Link
                     to="/myerrands"
                     className="flex items-center text-gray-600 hover:text-gray-800"
@@ -175,57 +213,57 @@ function Profile() {
                     <FaChartBar className="mr-3 text-gray-500" /> MyErranders
                   </Link>
                 </li>
-        <li>
-          <Link
-            to="/profile"
-            className={`flex items-center ${
-              location.pathname === '/profile' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <FaHotel className="mr-3 text-gray-500" /> Profile
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="#"
-            className="flex items-center text-gray-600 hover:text-gray-800"
-          >
-            <FaCar className="mr-3 text-gray-500" /> Reports
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="#"
-            className="flex items-center text-gray-600 hover:text-gray-800"
-          >
-            <FaPlane className="mr-3 text-gray-500" /> Statistics
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="#"
-            className="flex items-center text-gray-600 hover:text-gray-800"
-          >
-            <FaUser className="mr-3 text-gray-500" /> Details
-          </Link>
-        </li>
-      </ul>
-    </nav>
-  </div>
-  <div className="flex items-center">
-    <img
-      src={profile.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'}
-      alt="User"
-      className="w-10 h-10 rounded-full mr-3"
-    />
-    <div>
-      <p className="text-gray-800 font-semibold">{profile?.userId?.firstName} {profile?.userId?.lastName}</p>
-      <Link to="#" className="text-gray-600 text-sm hover:underline">
-        Visit site
-      </Link>
-    </div>
-  </div>
-</div>
+                <li>
+                  <Link
+                    to="/profile"
+                    className={`flex items-center ${
+                      location.pathname === '/profile' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    <FaHotel className="mr-3 text-gray-500" /> Profile
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="#"
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaCar className="mr-3 text-gray-500" /> Reports
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="#"
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaPlane className="mr-3 text-gray-500" /> Statistics
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="#"
+                    className="flex items-center text-gray-600 hover:text-gray-800"
+                  >
+                    <FaUser className="mr-3 text-gray-500" /> Details
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          </div>
+          <div className="flex items-center">
+            <img
+              src={profile.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'}
+              alt="User"
+              className="w-10 h-10 rounded-full mr-3"
+            />
+            <div>
+              <p className="text-gray-800 font-semibold">{profile?.userId?.firstName} {profile?.userId?.lastName}</p>
+              <Link to="#" className="text-gray-600 text-sm hover:underline">
+                Visit site
+              </Link>
+            </div>
+          </div>
+        </div>
 
         {/* Main Content */}
         <div className="flex-1 p-6 lg:p-8">
@@ -588,6 +626,40 @@ function Profile() {
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
+
+              {/* Job Selection Section */}
+              {availableJobs.length > 0 && (
+                <div className="col-span-2">
+                  <label className="block text-gray-600 mb-1">Job Preferences ({role})</label>
+                  {availableJobs.map((job) => (
+                    <div key={job} className="flex items-center mb-2">
+                      <span className="mr-4 text-gray-800">{job}</span>
+                      <label className="mr-4">
+                        <input
+                          type="radio"
+                          name={`job-${job}`}
+                          value="canDo"
+                          checked={profile.jobsCanDo.includes(job)}
+                          onChange={() => handleJobChange(job, 'canDo')}
+                          disabled={!isEditing}
+                        />
+                        <span className="ml-1">Can Do</span>
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name={`job-${job}`}
+                          value="cannotDo"
+                          checked={profile.jobsCannotDo.includes(job)}
+                          onChange={() => handleJobChange(job, 'cannotDo')}
+                          disabled={!isEditing}
+                        />
+                        <span className="ml-1">Cannot Do</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Display comments/reviews if available */}
@@ -603,6 +675,25 @@ function Profile() {
                     </p>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Display selected jobs when not editing */}
+            {!isEditing && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Job Preferences</h3>
+                <div className="mb-4">
+                  <p className="text-gray-800 font-semibold">Jobs I Can Do:</p>
+                  <p className="text-gray-600">
+                    {profile.jobsCanDo.length > 0 ? profile.jobsCanDo.join(', ') : 'None selected'}
+                  </p>
+                </div>
+                <div className="mb-4">
+                  <p className="text-gray-800 font-semibold">Jobs I Cannot Do:</p>
+                  <p className="text-gray-600">
+                    {profile.jobsCannotDo.length > 0 ? profile.jobsCannotDo.join(', ') : 'None selected'}
+                  </p>
+                </div>
               </div>
             )}
           </div>
