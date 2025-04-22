@@ -18,6 +18,7 @@ import DashboardUser from './Pages/user/DashboardUser';
 import ErrandersInDashboard from './Pages/user/ErrandersInDashboard';
 import ProfileUser from './Pages/user/ProfileUser';
 import MyErrander from './Pages/Errander/MyErrander';
+import MapWithCar from './Pages/MapWithCar';
 
 const App = () => {
   return (
@@ -56,6 +57,8 @@ const App = () => {
           <Route path="/userdashboard" element={<DashboardUser />} />
           <Route path="/errandersIndashboard" element={<ErrandersInDashboard />} />
           <Route path="/userprofile" element={<ProfileUser />} />
+
+          <Route path='/mapwithcar'  element={<MapWithCar />} />
         
         </Routes>
       </Router>

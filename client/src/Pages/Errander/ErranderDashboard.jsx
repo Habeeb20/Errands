@@ -234,8 +234,8 @@ function ErrandDashboard() {
               <FaUser className="text-green-600 text-2xl" />
             </div>
             <div>
-              <p className="text-gray-600">Travelers</p>
-              <p className="text-2xl font-bold text-gray-800">1,251</p>
+              <p className="text-gray-600">Clients</p>
+              <p className="text-2xl font-bold text-gray-800">1</p>
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
