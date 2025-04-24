@@ -480,6 +480,9 @@ const AllErrander = () => {
                   <p className="text-gray-800 font-semibold">
                     Gender: <span className="font-normal">{dat.gender || 'N/A'}</span>
                   </p>
+                  <p className={`text-gray-800 font-semibold ${dat.userId?.role === "errander" ? "text-green-500" : dat.userId?.role === "messenger" ? "text-blue-500" : "text-black"}`}>
+                    role: <span className="font-bold ">{dat.userId?.role || 'N/A'}</span>
+                  </p>
                   <p className="text-gray-800 font-semibold">
                     Location:{' '}
                     <span className="font-normal">

@@ -8,6 +8,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Profile from './Profile';
 import io from 'socket.io-client';
+import { FaTimes } from 'react-icons/fa';
 
 const socket = io(import.meta.env.VITE_BACKEND_URL);
 
@@ -401,9 +402,17 @@ function ErrandDashboard() {
         >
           <div>
             <div className="flex items-center mb-8">
+            <div className="flex items-center">
               <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-md mr-2"></div>
               <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
             </div>
+              <button
+                            className="lg:hidden text-gray-600 hover:text-gray-800"
+                            onClick={() => setIsSidebarOpen(false)}
+                          >
+                            <FaTimes size={24} />
+                          </button>
+                          </div>
             <nav>
               <ul className="space-y-4">
                 <li>

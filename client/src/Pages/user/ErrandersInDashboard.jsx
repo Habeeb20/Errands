@@ -917,11 +917,11 @@ function ErrandersInDashboard() {
                         <div className="flex space-x-4">
                           <div className="flex items-center text-gray-600">
                             <FaBox className="mr-1 text-gray-500" />
-                            <span>{comments.length}</span>
+                            <span>{dat.commentCount}</span>
                           </div>
                           <div className="flex items-center text-gray-600">
                             <FaThumbsUp className="mr-1 text-green-500" />
-                            <span>{clicks || 0}</span>
+                            <span>{clickCounts[dat.slug] || 0}</span>
                           </div>
                           <div className="flex items-center text-gray-600">
                             <FaThumbsDown className="mr-1 text-red-500" />
@@ -1109,7 +1109,7 @@ function ErrandersInDashboard() {
                     Distance: <span className="font-normal">{distanceData.distance} km</span>
                   </p>
                   <p className="text-gray-800 font-semibold">
-                    Fare: <span className="font-normal">₦{distanceData.fare}</span>
+                    Fare: <span className="text-green-500 font-bold">₦{distanceData.fare}</span>
                   </p>
                 </div>
               ) : (

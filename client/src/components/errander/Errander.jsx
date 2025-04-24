@@ -39,38 +39,70 @@ const Errander = () => {
   const [shareCount, setShareCount] = useState(0);
 
   useEffect(() => {
+    // Reset state when slug changes
+    setProfile(null);
+    setComments([]);
+    setShareCount(0);
+    setError(null);
+    setLoading(true);
+
     if (!slug) {
       toast.error('Profile details not found', {
         style: { background: 'white', color: 'red' },
       });
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    // Clear localStorage for comments related to the previous slug
+    const storedComments = localStorage.getItem(`school_${slug}_comments`);
+    if (storedComments) {
+      setComments(JSON.parse(storedComments));
+    } else {
+      setComments([]);
+      localStorage.removeItem(`school_${slug}_comments`);
+    }
+
+    // Fetch profile data with cache-busting
     axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/aprofile/${slug}`)
+      .get(`${import.meta.env.VITE_BACKEND_URL}/api/profile/aprofile/${slug}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      })
       .then((response) => {
+        console.log(`Fetched profile for slug: ${slug}`, response.data.profile);
         setProfile(response.data.profile);
-        console.log(response.data.profile, "your profile details");
         setComments(response.data.profile?.comments || []);
         setShareCount(response.data.profile?.shareCount || 0);
         setError(null);
       })
       .catch((error) => {
-        console.log(error);
+        console.error(`Error fetching profile for slug: ${slug}`, error);
+        setError('Failed to load profile, please try again later');
         toast.error('Failed to load profile, please try again later', {
           style: { background: 'white', color: 'red' },
         });
       })
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug]); // Dependency on slug ensures this runs when slug changes
 
   const handleShareClick = async () => {
     try {
       setShareCount((prev) => prev + 1);
 
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/shares`
+        `${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/shares`,
+        {},
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
       );
       console.log('Share recorded successfully:', response.data);
 
@@ -102,7 +134,13 @@ const Errander = () => {
     );
 
     axios
-      .post(`${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/comments`, comment)
+      .post(`${import.meta.env.VITE_BACKEND_URL}/api/profile/${slug}/comments`, comment, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      })
       .then(() => {})
       .catch((error) => console.error('Failed to post comment:', error));
   };
@@ -448,9 +486,6 @@ const Errander = () => {
 };
 
 export default Errander;
-
-
-
 
 
 
