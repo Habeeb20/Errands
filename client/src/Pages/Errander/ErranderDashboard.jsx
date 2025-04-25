@@ -26,6 +26,9 @@ function ErrandDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [trackingErrand, setTrackingErrand] = useState(null);
   const [accepted, setAccepted] = useState(null);
+  const [totalEarning, setTotalEarning] = useState([])
+  const [completed,SetCompleted] = useState([])
+  const[tenPercent, setTenPercent] = useState([])
 
   const [bookings, setBookings] = useState([]); 
   useEffect(() => {
@@ -72,6 +75,8 @@ function ErrandDashboard() {
 
     fetchData();
   }, [navigate]);
+
+  const token = localStorage.getItem("token")
 
 
 
@@ -123,6 +128,26 @@ function ErrandDashboard() {
       }
     }, [profile]);
 
+
+
+    ///fetch earnings
+
+    useEffect(() => {
+      const fetchEarnings = async()=> {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/errand/total-earnings`, {
+            headers:{Authorization :`Bearer ${token}`}
+          })
+          setTotalEarning(response.data.totalEarnings)
+          SetCompleted(response.data.completedErrandsCount)
+          setTenPercent(response.data.platformFee)
+        } catch (error) {
+          console.log(error)
+        }
+        
+      }
+      fetchEarnings()
+    })
 
     // Handle accepting an errand
     const acceptedErrands = bookings.filter(
@@ -240,7 +265,7 @@ function ErrandDashboard() {
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
-            <div className="p-4 bg-blue-100 rounded-lg mr-4">
+            <div className="p-4 bg-green-100 rounded-lg mr-4">
               <FaHotel className="text-blue-600 text-2xl" />
             </div>
             <div>
@@ -249,14 +274,46 @@ function ErrandDashboard() {
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
+            <div className="p-4 bg-blue-100 rounded-lg mr-4">
+              <FaHotel className="text-yellow-600 text-2xl" />
+            </div>
+            <div>
+              <p className="text-gray-600">Total Earnings</p>
+              <p className="text-2xl font-bold text-gray-800"><span className='font-bold text-black pr-2'>N</span>{totalEarning}</p>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
             <div className="p-4 bg-red-100 rounded-lg mr-4">
               <FaChartBar className="text-red-600 text-2xl" />
             </div>
             <div>
-              <p className="text-gray-600">Earnings</p>
-              <p className="text-2xl font-bold text-gray-800">95,540 $</p>
+              <p className="text-green-600 mt-4 font-bold">Income</p>
+              <p className="text-2xl font-bold text-gray-800"><span className='font-bold text-black pr-2'>N</span>{tenPercent}</p>
+             
             </div>
           </div>
+          <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
+            <div className="p-4 bg-red-100 rounded-lg mr-4">
+              <FaChartBar className="text-red-600 text-2xl" />
+            </div>
+            <div>
+              <p className="text-green-600 mt-4 font-bold">Completed Errands</p>
+              <p className="text-2xl font-bold text-gray-800">{completed}</p>
+             
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
+            <div className="p-4 bg-red-100 rounded-lg mr-4">
+              <FaChartBar className="text-red-600 text-2xl" />
+            </div>
+            <div>
+              <p className="text-green-600 mt-4 font-bold">platform fee</p>
+              <p className="text-2xl font-bold text-gray-800">10%</p>
+             
+            </div>
+          </div>
+          
         </div>
 
         {/* Main Content Grid */}

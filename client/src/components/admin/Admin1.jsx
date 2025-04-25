@@ -222,6 +222,18 @@ const Admin1 = () => {
     >
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-bold mb-4">Errander Details</h2>
+          <div className="flex items-center mt-2">
+                                  <img
+                                    src={errander.profilePicture || 'https://via.placeholder.com/50'}
+                                    alt={`${errander.userId?.firstName}'s profile`}
+                                    className="w-12 h-12 rounded-full mr-2"
+                                  />
+                                  <button
+                                    onClick={() => window.open(errander.profilePicture || 'https://via.placeholder.com/50', '_blank')}
+                                  >
+                                    <FaEye className="inline mr-1" /> View Picture
+                                  </button>
+                                </div>
         <div className="space-y-2">
           <p><strong>Name:</strong> {`${errander.userId?.firstName || 'N/A'} ${errander.userId?.lastName || 'N/A'}`}</p>
           <p><strong>Email:</strong> {errander.userId?.email || 'N/A'}</p>
@@ -229,6 +241,10 @@ const Admin1 = () => {
           <p><strong>Verification Status:</strong> {errander.userId?.verificationStatus || 'N/A'}</p>
           <p><strong>Blacklisted:</strong> {errander.isBlacklisted ? "Yes" : "No"}</p>
           <p><strong>Featured:</strong> {errander.isFeatured ? "Yes" : "No"}</p>
+          <p><strong>Age:</strong> {errander.age}</p>
+          <p><strong>Gender:</strong> {errander.gender}</p>
+          <p><strong>state:</strong> {errander.state}</p>
+          <p><strong>LGA:</strong> {errander.LGA}</p>
           <p><strong>Created At:</strong> {new Date(errander.createdAt).toLocaleDateString()}</p>
         </div>
         <div className="mt-6 flex justify-end">
