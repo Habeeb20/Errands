@@ -28,7 +28,7 @@ const Navbar = () => {
         <div
           className={`md:flex md:items-center md:space-x-6 ${
             isOpen ? "block" : "hidden"
-          } absolute md:static top-16 left-0 w-full md:w-auto bg-white md:bg-transparent shadow-md md:shadow-none p-4 md:p-0 z-10`}
+          } absolute md:static top-16 left-0 w-full md:w-auto bg-white md:bg-white shadow-md md:shadow-none p-4 md:p-0 z-10`}
         >
           <Link
             to="/"

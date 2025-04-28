@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
@@ -32,7 +33,10 @@ const Admin1 = () => {
   const [activeTab, setActiveTab] = useState("erranders");
   const [selectedErrander, setSelectedErrander] = useState(null);
   const [loadingActions, setLoadingActions] = useState({});
-  const [loading, setLoading] = useState(true); // Added loading state
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openCollapsible, setOpenCollapsible] = useState(null); // Added state
+  const [dataLoading, setDataLoading] = useState(true); // Added for fetchData
 
   const navigate = useNavigate();
 
@@ -66,6 +70,8 @@ const Admin1 = () => {
           localStorage.removeItem("token");
           navigate("/login");
         }
+      } finally {
+        setDataLoading(false);
       }
     };
     fetchData();
@@ -78,11 +84,11 @@ const Admin1 = () => {
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/erranders`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
       setErranders(response.data.data || []);
-      console.log('Erranders Response:', JSON.stringify(response.data.data, null, 2));
+      console.log("Erranders Response:", JSON.stringify(response.data.data, null, 2));
     } catch (error) {
       console.error("Error fetching erranders:", error);
       toast.error("Failed to fetch erranders", {
@@ -101,6 +107,23 @@ const Admin1 = () => {
     fetchErranders();
   }, [navigate]);
 
+  // Open modal (desktop)
+  const openModal = (errander) => {
+    setSelectedErrander(errander);
+    setIsModalOpen(true);
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setSelectedErrander(null);
+    setIsModalOpen(false);
+  };
+
+  // Toggle collapsible (mobile)
+  const toggleCollapsible = (id) => {
+    setOpenCollapsible(openCollapsible === id ? null : id);
+  };
+
   const handleVerify = async (errander) => {
     if (!errander.userId?._id) {
       toast.error("Cannot verify: User ID not found", {
@@ -115,9 +138,9 @@ const Admin1 = () => {
       await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth/verify-errander/${userId}`,
         {},
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
-      await fetchErranders(); // Refetch after verifying
+      await fetchErranders();
       toast.success("Errander verified successfully", {
         style: { background: "#4CAF50", color: "white" },
       });
@@ -148,9 +171,9 @@ const Admin1 = () => {
       await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth${endpoint}`,
         {},
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
-      await fetchErranders(); // Refetch after updating
+      await fetchErranders();
       toast.success(
         isBlacklisted
           ? "Errander unblacklisted successfully"
@@ -186,9 +209,9 @@ const Admin1 = () => {
       await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/api/auth${endpoint}`,
         {},
-        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
       );
-      await fetchErranders(); // Refetch after updating
+      await fetchErranders();
       toast.success(
         isFeatured
           ? "Errander unfeatured successfully"
@@ -222,30 +245,91 @@ const Admin1 = () => {
     >
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-bold mb-4">Errander Details</h2>
-          <div className="flex items-center mt-2">
-                                  <img
-                                    src={errander.profilePicture || 'https://via.placeholder.com/50'}
-                                    alt={`${errander.userId?.firstName}'s profile`}
-                                    className="w-12 h-12 rounded-full mr-2"
-                                  />
-                                  <button
-                                    onClick={() => window.open(errander.profilePicture || 'https://via.placeholder.com/50', '_blank')}
-                                  >
-                                    <FaEye className="inline mr-1" /> View Picture
-                                  </button>
-                                </div>
+        <div className="flex items-center mt-2">
+          <img
+            src={errander.profilePicture || "https://via.placeholder.com/50"}
+            alt={`${errander.userId?.firstName}'s profile`}
+            className="w-12 h-12 rounded-full mr-2"
+          />
+        </div>
         <div className="space-y-2">
-          <p><strong>Name:</strong> {`${errander.userId?.firstName || 'N/A'} ${errander.userId?.lastName || 'N/A'}`}</p>
-          <p><strong>Email:</strong> {errander.userId?.email || 'N/A'}</p>
-          <p><strong>Unique Number:</strong> {errander.userId?.uniqueNumber || "N/A"}</p>
-          <p><strong>Verification Status:</strong> {errander.userId?.verificationStatus || 'N/A'}</p>
-          <p><strong>Blacklisted:</strong> {errander.isBlacklisted ? "Yes" : "No"}</p>
-          <p><strong>Featured:</strong> {errander.isFeatured ? "Yes" : "No"}</p>
-          <p><strong>Age:</strong> {errander.age}</p>
-          <p><strong>Gender:</strong> {errander.gender}</p>
-          <p><strong>state:</strong> {errander.state}</p>
-          <p><strong>LGA:</strong> {errander.LGA}</p>
-          <p><strong>Created At:</strong> {new Date(errander.createdAt).toLocaleDateString()}</p>
+          <p>
+            <strong>Name:</strong>{" "}
+            {`${errander.userId?.firstName || "N/A"} ${errander.userId?.lastName || "N/A"}`}
+          </p>
+          <p>
+            <strong>Email:</strong> {errander.userId?.email || "N/A"}
+          </p>
+          <p>
+            <strong>Phone Number:</strong> {errander.userId?.phone || "N/A"}
+          </p>
+          <p>
+            <strong>Unique Number:</strong> {errander.userId?.uniqueNumber || "N/A"}
+          </p>
+          <p>
+            <strong>Verification Status:</strong>{" "}
+            {errander.userId?.verificationStatus || "N/A"}
+          </p>
+          <p>
+            <strong>Blacklisted:</strong>{" "}
+            {errander.userId?.isBlacklisted ? "Yes" : "No"}
+          </p>
+          <p>
+            <strong>Featured:</strong> {errander.userId?.isFeatured ? "Yes" : "No"}
+          </p>
+          <p>
+            <strong>Age:</strong> {errander.age || "N/A"}
+          </p>
+          <p>
+            <strong>Gender:</strong> {errander.gender || "N/A"}
+          </p>
+          <p>
+            <strong>State:</strong> {errander.state || "N/A"}
+          </p>
+          <p>
+            <strong>LGA:</strong> {errander.LGA || "N/A"}
+          </p>
+          <p>
+            <strong>Created At:</strong>{" "}
+            {new Date(errander.createdAt).toLocaleDateString()}
+          </p>
+          {/* View Income Button */}
+          <button
+            onClick={() => openModal(errander)}
+            className="lg:block hidden w-full py-2 px-4 bg-[#F4B400] text-[#1C2526] hover:bg-[#FFC107] rounded-lg font-semibold transition duration-300 focus:outline-none focus:ring-2 focus:ring-[#F4B400]"
+            aria-label={`View income details for ${errander.userId?.firstName}`}
+          >
+            View Income
+          </button>
+          <button
+            onClick={() => toggleCollapsible(errander._id)}
+            className="lg:hidden w-full py-2 px-4 bg-[#F4B400] text-[#1C2526] hover:bg-[#FFC107] rounded-lg font-semibold transition duration-300 focus:outline-none focus:ring-2 focus:ring-[#F4B400]"
+            aria-label={`Toggle income details for ${errander.userId?.firstName}`}
+          >
+            {openCollapsible === errander._id ? "Hide Income" : "View Income"}
+          </button>
+          {openCollapsible === errander._id && (
+            <div className="mt-4 p-4 bg-[#1B5E91]/50 rounded-lg lg:hidden">
+              <p className="text-white mb-2">
+                Comments: {errander.commentCount || 0}
+              </p>
+              <p className="text-white mb-2">
+                Completed Errands: {errander.completedErrandsCount || 0}
+              </p>
+              <p className="text-white mb-2">
+                Canceled Errands: {errander.canceledErrandsCount || 0}
+              </p>
+              <p className="text-white mb-2">
+                Total Income: ₦{(errander.totalIncome || 0).toFixed(2)}
+              </p>
+              <p className="text-white mb-2">
+                Platform Fee: ₦{(errander.platformFee || 0).toFixed(2)}
+              </p>
+              <p className="text-white mb-2">
+                Income After Fee: ₦{(errander.incomeAfterFee || 0).toFixed(2)}
+              </p>
+            </div>
+          )}
         </div>
         <div className="mt-6 flex justify-end">
           <button
@@ -314,25 +398,31 @@ const Admin1 = () => {
       className="p-6 bg-white rounded-lg shadow-md"
     >
       <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
-      <p className="text-gray-600">
-        Welcome to the admin dashboard. Here you can view key metrics and manage your platform.
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-        <div className="p-4 bg-green-100 rounded-lg">
-          <h3 className="text-lg font-semibold">Total Users</h3>
-          <p className="text-2xl font-bold">{data.totalUsers || 0}</p>
-        </div>
-        <div className="p-4 bg-green-100 rounded-lg">
-          <h3 className="text-lg font-semibold">Total Erranders</h3>
-          <p className="text-2xl font-bold">{erranders.length}</p>
-        </div>
-        <div className="p-4 bg-green-100 rounded-lg">
-          <h3 className="text-lg font-semibold">Pending Verifications</h3>
-          <p className="text-2xl font-bold">
-            {erranders.filter((e) => e.userId?.verificationStatus === "pending").length}
+      {dataLoading ? (
+        <p className="text-gray-600">Loading dashboard data...</p>
+      ) : (
+        <>
+          <p className="text-gray-600">
+            Welcome to the admin dashboard. Here you can view key metrics and manage your platform.
           </p>
-        </div>
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div className="p-4 bg-green-100 rounded-lg">
+              <h3 className="text-lg font-semibold">Total Users</h3>
+              <p className="text-2xl font-bold">{data.totalUsers || 0}</p>
+            </div>
+            <div className="p-4 bg-green-100 rounded-lg">
+              <h3 className="text-lg font-semibold">Total Erranders</h3>
+              <p className="text-2xl font-bold">{erranders.length}</p>
+            </div>
+            <div className="p-4 bg-green-100 rounded-lg">
+              <h3 className="text-lg font-semibold">Pending Verifications</h3>
+              <p className="text-2xl font-bold">
+                {erranders.filter((e) => e.userId?.verificationStatus === "pending").length}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 
@@ -369,30 +459,40 @@ const Admin1 = () => {
                   key={errander._id}
                   className="border-b hover:bg-gray-50 transition duration-200"
                 >
-                  <td className="p-4">{`${errander?.userId?.firstName || 'N/A'} ${errander?.userId?.lastName || 'N/A'}`}</td>
-                  <td className="p-4">{errander.userId?.email || 'N/A'}</td>
+                  <td className="p-4">
+                    {`${errander?.userId?.firstName || "N/A"} ${errander?.userId?.lastName || "N/A"}`}
+                  </td>
+                  <td className="p-4">{errander.userId?.email || "N/A"}</td>
                   <td className="p-4">
                     <ToggleSwitch
                       checked={errander.userId?.verificationStatus === "verified"}
                       onChange={() => handleVerify(errander)}
                       loading={loadingActions[`verify-${errander._id}`]}
-                      label={errander.userId?.verificationStatus === "verified" ? "Verified" : "Pending"}
+                      label={
+                        errander.userId?.verificationStatus === "verified"
+                          ? "Verified"
+                          : "Pending"
+                      }
                     />
                   </td>
                   <td className="p-4">
                     <ToggleSwitch
-                      checked={errander.isBlacklisted || false}
-                      onChange={() => handleBlacklist(errander, errander.isBlacklisted || false)}
+                      checked={errander.userId?.isBlacklisted || false}
+                      onChange={() =>
+                        handleBlacklist(errander, errander.userId?.isBlacklisted || false)
+                      }
                       loading={loadingActions[`blacklist-${errander._id}`]}
-                      label={errander.isBlacklisted ? "Blacklisted" : "Not Blacklisted"}
+                      label={errander.userId?.isBlacklisted ? "Blacklisted" : "Not Blacklisted"}
                     />
                   </td>
                   <td className="p-4">
                     <ToggleSwitch
-                      checked={errander.isFeatured || false}
-                      onChange={() => handleFeature(errander, errander.isFeatured || false)}
+                      checked={errander.userId?.isFeatured || false}
+                      onChange={() =>
+                        handleFeature(errander, errander.userId?.isFeatured || false)
+                      }
                       loading={loadingActions[`feature-${errander._id}`]}
-                      label={errander.isFeatured ? "Featured" : "Not Featured"}
+                      label={errander.userId?.isFeatured ? "Featured" : "Not Featured"}
                     />
                   </td>
                   <td className="p-4">
@@ -532,10 +632,7 @@ const Admin1 = () => {
                 setActiveTab("users");
                 setIsSidebarOpen(false);
               }}
-              className={`w-full flex items-center p-3 rounded-lg transition duration-300 ${
-                activeTab === "users" ? "bg-green-600" : "hover:bg-green-600"
-              }`}
-            >
+              className={`w-full flex items-center p-3 rounded-lg transition duration-300 ${activeTab === "users" ? "bg-green-600" : "hover:bg-green-600"}`}>
               <FaUsers className="mr-3" />
               Users
             </button>
@@ -588,6 +685,58 @@ const Admin1 = () => {
             errander={selectedErrander}
             onClose={() => setSelectedErrander(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Income Modal (Desktop) */}
+      <AnimatePresence>
+        {isModalOpen && selectedErrander && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={modalVariants}
+          >
+            <div className="bg-[#1C2526] rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-white">
+                  {selectedErrander.userId?.firstName}'s Income Details
+                </h2>
+                <button
+                  onClick={closeModal}
+                  className="text-white text-xl focus:outline-none focus:ring-2 focus:ring-[#F4B400] rounded-md p-2 hover:text-[#F4B400] transition duration-300"
+                  aria-label="Close modal"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <p className="text-white mb-2">
+                Comments: {selectedErrander.commentCount || 0}
+              </p>
+              <p className="text-white mb-2">
+                Completed Errands: {selectedErrander.completedErrandsCount || 0}
+              </p>
+              <p className="text-white mb-2">
+                Canceled Errands: {selectedErrander.canceledErrandsCount || 0}
+              </p>
+              <p className="text-white mb-2">
+                Total Income: ₦{(selectedErrander.totalIncome || 0).toFixed(2)}
+              </p>
+              <p className="text-white mb-2">
+                Platform Fee: ₦{(selectedErrander.platformFee || 0).toFixed(2)}
+              </p>
+              <p className="text-white mb-2">
+                Income After Fee: ₦{(selectedErrander.incomeAfterFee || 0).toFixed(2)}
+              </p>
+              <button
+                onClick={closeModal}
+                className="mt-4 w-full py-2 px-4 bg-[#F4B400] text-[#1C2526] hover:bg-[#FFC107] rounded-lg font-semibold transition duration-300 focus:outline-none focus:ring-2 focus:ring-[#F4B400]"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -44,7 +44,7 @@ const Home1 = () => {
           <div className="absolute inset-0 bg-black opacity-50"></div>
           <div className="relative z-10 text-white px-4">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              We run e-rrands for you <br /> with ease and confidence
+              We run errands for you <br /> with ease and confidence
             </h1>
             <p className="text-lg md:text-xl mb-6">
               People are always on the move with little time to get everything done. Our logistics can achieve everything with ease.
