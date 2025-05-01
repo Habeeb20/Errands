@@ -9,6 +9,8 @@ import Navbar from '../../components/Navbar';
 import Profile from './Profile';
 import io from 'socket.io-client';
 import { FaTimes } from 'react-icons/fa';
+import TelephoneErrands from './TelephoneErrands';
+
 
 const socket = io(import.meta.env.VITE_BACKEND_URL);
 
@@ -26,9 +28,10 @@ function ErrandDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [trackingErrand, setTrackingErrand] = useState(null);
   const [accepted, setAccepted] = useState(null);
-  const [totalEarning, setTotalEarning] = useState([])
-  const [completed,SetCompleted] = useState([])
-  const[tenPercent, setTenPercent] = useState([])
+  const [totalEarning, setTotalEarning] = useState([]);
+  const [completed, SetCompleted] = useState([]);
+  const [tenPercent, setTenPercent] = useState([]);
+  const [income, setIncome] = useState([]);
 
   const [bookings, setBookings] = useState([]); 
   useEffect(() => {
@@ -76,11 +79,7 @@ function ErrandDashboard() {
     fetchData();
   }, [navigate]);
 
-  const token = localStorage.getItem("token")
-
-
-
-
+  const token = localStorage.getItem("token");
 
     // Fetch bookings and notifications, and set up Socket.IO
     useEffect(() => {
@@ -128,10 +127,7 @@ function ErrandDashboard() {
       }
     }, [profile]);
 
-
-
     ///fetch earnings
-
     useEffect(() => {
       const fetchEarnings = async()=> {
         try {
@@ -141,10 +137,10 @@ function ErrandDashboard() {
           setTotalEarning(response.data.totalEarnings)
           SetCompleted(response.data.completedErrandsCount)
           setTenPercent(response.data.platformFee)
+          setIncome(response.data.income)
         } catch (error) {
           console.log(error)
         }
-        
       }
       fetchEarnings()
     })
@@ -237,6 +233,12 @@ function ErrandDashboard() {
     if (location.pathname === '/profile') {
       return <Profile />;
     }
+    if (location.pathname === '/telephone-errands') {
+      return <TelephoneErrands />;
+    }
+    // if (location.pathname === '/login') { // Added condition for Login
+    //   return <Login />;
+    // }
 
     return (
       <div className="flex-1 p-6 lg:p-8">
@@ -287,9 +289,10 @@ function ErrandDashboard() {
               <FaChartBar className="text-red-600 text-2xl" />
             </div>
             <div>
-              <p className="text-green-600 mt-4 font-bold">Income</p>
+              <p className="text-green-600 mt-4 font-bold">platForm deduction </p>
               <p className="text-2xl font-bold text-gray-800"><span className='font-bold text-black pr-2'>N</span>{tenPercent}</p>
-             
+              <p className="text-green-600 mt-4 font-bold"> Income</p>
+              <p className="text-2xl font-bold text-gray-800"><span className='font-bold text-black pr-2'>N</span>{income}</p>
             </div>
           </div>
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
@@ -299,10 +302,8 @@ function ErrandDashboard() {
             <div>
               <p className="text-green-600 mt-4 font-bold">Completed Errands</p>
               <p className="text-2xl font-bold text-gray-800">{completed}</p>
-             
             </div>
           </div>
-          
           <div className="bg-white p-6 rounded-xl shadow-md flex items-center">
             <div className="p-4 bg-red-100 rounded-lg mr-4">
               <FaChartBar className="text-red-600 text-2xl" />
@@ -310,10 +311,8 @@ function ErrandDashboard() {
             <div>
               <p className="text-green-600 mt-4 font-bold">platform fee</p>
               <p className="text-2xl font-bold text-gray-800">10%</p>
-             
             </div>
           </div>
-          
         </div>
 
         {/* Main Content Grid */}
@@ -390,19 +389,20 @@ function ErrandDashboard() {
                 <span className="text-red-500 font-semibold">{bookings.length}</span>
               </div>
               <div className="flex space-x-2">
-  {acceptedErrands.length > 0 ? (
-    acceptedErrands.map((accept) => (
-      <img
-        key={accept._id}
-        src={accept.client?.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'} 
-        alt={`${accept.client?.firstName || 'Traveler'} ${accept.client?.lastName || ''}`} 
-        className="w-10 h-10 rounded-full"
-      />
-    ))
-  ) : (
-    <p className="text-gray-600">No clients yet</p> 
-  )}
-</div>
+                {acceptedErrands.length > 0 ? (
+                  acceptedErrands.map((accept) => (
+                    <img
+                      key={accept._id}
+                      src={accept.client?.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'} 
+                      alt={`${accept.client?.firstName || 'Traveler'} ${accept.client?.lastName || ''}`} 
+                      className="w-10 h-10 rounded-full"
+                    />
+                  ))
+                ) : (
+                  <p className="text-gray
+-600">No clients yet</p> 
+                )}
+              </div>
             </div>
 
             {/* Spend Breakdowns */}
@@ -459,17 +459,17 @@ function ErrandDashboard() {
         >
           <div>
             <div className="flex items-center mb-8">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-md mr-2"></div>
-              <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
-            </div>
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-md mr-2"></div>
+                <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
+              </div>
               <button
-                            className="lg:hidden text-gray-600 hover:text-gray-800"
-                            onClick={() => setIsSidebarOpen(false)}
-                          >
-                            <FaTimes size={24} />
-                          </button>
-                          </div>
+                className="lg:hidden text-gray-600 hover:text-gray-800"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <FaTimes size={24} />
+              </button>
+            </div>
             <nav>
               <ul className="space-y-4">
                 <li>
@@ -490,7 +490,6 @@ function ErrandDashboard() {
                     <FaChartBar className="mr-3 text-gray-500" /> MyErrands
                     <span className='bg-red-500 rounded-full text-white p-1 space-x-2 font-sm'>{notifications.length}</span>
                   </Link>
-             
                 </li>
                 <li>
                   <Link
@@ -504,10 +503,11 @@ function ErrandDashboard() {
                 </li>
                 <li>
                   <Link
-                    to="#"
+                    to="/telephone-errands"
                     className="flex items-center text-gray-600 hover:text-gray-800"
                   >
-                    <FaCar className="mr-3 text-gray-500" /> Reports
+                    <FaCar className="mr-3 text-gray-500" /> Telephone errands
+                    {/* Removed <TelephoneErrands /> from here */}
                   </Link>
                 </li>
                 <li>

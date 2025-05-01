@@ -8,6 +8,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import io from 'socket.io-client';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
+import ProfileUser from './ProfileUser';
+import TelephoneHistory from './TelephoneHistory';
 
 // Initialize Socket.IO client
 const socket = io(import.meta.env.VITE_BACKEND_URL);
@@ -202,7 +204,10 @@ function DashboardUser() {
 
   const renderMainContent = () => {
     if (location.pathname === '/profile') {
-      return <Profile />;
+      return <ProfileUser />;
+    }
+    if(location.pathname === '/telephone-history') {
+      return <TelephoneHistory />;
     }
 
     return (
@@ -454,7 +459,7 @@ function DashboardUser() {
                 </li>
                 <li>
                   <Link
-                    to="/"
+                    to="/profile"
                     className={`flex items-center ${
                       location.pathname === '/profile' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
                     }`}
@@ -464,10 +469,10 @@ function DashboardUser() {
                 </li>
                 <li>
                   <Link
-                    to="#"
+                    to="/telephone-history"
                     className="flex items-center text-gray-600 hover:text-gray-800"
                   >
-                    <FaCar className="mr-3 text-gray-500" /> Reports
+                    <FaCar className="mr-3 text-gray-500" /> Telephone-history
                   </Link>
                 </li>
                 <li>

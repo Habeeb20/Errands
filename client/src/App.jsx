@@ -19,6 +19,9 @@ import ErrandersInDashboard from './Pages/user/ErrandersInDashboard';
 import ProfileUser from './Pages/user/ProfileUser';
 import MyErrander from './Pages/Errander/MyErrander';
 import MapWithCar from './Pages/MapWithCar';
+import TelephoneBooking from './components/admin/TelephoneBooking';
+import Telephone from './components/others/Telephone';
+import TelephoneErrands from './Pages/Errander/TelephoneErrands';
 
 const App = () => {
   return (
@@ -52,11 +55,19 @@ const App = () => {
           <Route path="/erranderdashboard" element={<ErrandDashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/myerrands" element={<MyErrander />} />
+          
+          <Route path="/telephone-errands" element={<TelephoneErrands />} />
+
 
 
           <Route path="/userdashboard" element={<DashboardUser />} />
           <Route path="/errandersIndashboard" element={<ErrandersInDashboard />} />
           <Route path="/userprofile" element={<ProfileUser />} />
+          
+
+          <Route path="/telephone-booking" element={<Telephone />} />
+
+
 
           <Route path='/mapwithcar'  element={<MapWithCar />} />
         
