@@ -184,102 +184,14 @@ function Profile() {
 
   return (
     <>
-      <Navbar />
+
       <div className="flex min-h-screen bg-gray-100 font-sans">
         {/* Sidebar */}
-        <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg lg:w-1/5 p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center mb-8">
-              <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-md mr-2"></div>
-              <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
-            </div>
-            <nav>
-              <ul className="space-y-4">
-                <li>
-                  <Link
-                    to="/erranderdashboard"
-                    className={`flex items-center ${
-                      location.pathname === '/erranderdashboard' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    <FaChartBar className="mr-3 text-gray-500" /> Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/myerrands"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                  >
-                    <FaChartBar className="mr-3 text-gray-500" /> MyErranders
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/profile"
-                    className={`flex items-center ${
-                      location.pathname === '/profile' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    <FaHotel className="mr-3 text-gray-500" /> Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                  >
-                    <FaCar className="mr-3 text-gray-500" /> Reports
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                  >
-                    <FaPlane className="mr-3 text-gray-500" /> Statistics
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                  >
-                    <FaUser className="mr-3 text-gray-500" /> Details
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </div>
-          <div className="flex items-center">
-            <img
-              src={profile.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'}
-              alt="User"
-              className="w-10 h-10 rounded-full mr-3"
-            />
-            <div>
-              <p className="text-gray-800 font-semibold">{profile?.userId?.firstName} {profile?.userId?.lastName}</p>
-              <Link to="#" className="text-gray-600 text-sm hover:underline">
-                Visit site
-              </Link>
-            </div>
-          </div>
-        </div>
-
+   
         {/* Main Content */}
         <div className="flex-1 p-6 lg:p-8">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center">
-              <button
-                className="lg:hidden mr-4 text-gray-600"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              >
-                <FaBars size={24} />
-              </button>
-              <h2 className="text-2xl font-bold text-gray-800">Profile</h2>
-            </div>
-          </div>
-
+     
           {/* Profile Form */}
           <div className="bg-white ml-45 p-6 rounded-xl shadow-md max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-6">

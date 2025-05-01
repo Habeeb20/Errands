@@ -56,7 +56,6 @@ const App = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/myerrands" element={<MyErrander />} />
           
-          <Route path="/telephone-errands" element={<TelephoneErrands />} />
 
 
 

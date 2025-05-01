@@ -631,124 +631,18 @@ function ErrandersInDashboard() {
           }
         `}
       </style>
-      <Navbar />
+
       <div className="flex min-h-screen bg-gray-100 font-sans">
         {/* Sidebar */}
-        <div className="fixed top-0 left-0 h-full w-64 bg-white shadow-lg lg:w-1/5 p-6 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center mb-8">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-900 rounded-md mr-2"></div>
-              <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
-            </div>
-            <nav>
-              <ul className="space-y-4">
-                <li>
-                  <Link
-                    to="/userdashboard"
-                    className={`flex items-center ${
-                      location.pathname === '/userdashboard' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    <FaChartBar className="mr-3 text-gray-500" /> Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                  >
-                    <FaChartBar className="mr-3 text-gray-500" /> Erranders
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/userprofile"
-                    className={`flex items-center ${
-                      location.pathname === '/userprofile' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    <FaHotel className="mr-3 text-gray-500" /> Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                  >
-                    <FaCar className="mr-3 text-gray-500" /> Reports
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                  >
-                    <FaPlane className="mr-3 text-gray-500" /> Statistics
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/login"
-                    className="flex items-center text-red-600 hover:text-gray-800"
-                  >
-                    <FaUser className="mr-3 text-red-500" /> Logout
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </div>
-          <div className="flex items-center">
-            <img
-              src={profile.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'}
-              alt="User"
-              className="w-10 h-10 rounded-full mr-3"
-            />
-            <div>
-              <p className="text-green-800">{profile?.userId?.email}</p>
-              <p className="text-gray-800 font-semibold">{profile?.userId?.firstName} {profile?.userId?.lastName}</p>
-              <Link to="#" className="text-gray-600 text-sm hover:underline">
-                Visit site
-              </Link>
-            </div>
-          </div>
-        </div>
+      
 
         {/* Main Content */}
         <div className="flex-1 p-6 lg:p-8">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center">
-              <button
-                className="lg:hidden mr-4 text-gray-600"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              >
-                <FaBars size={24} />
-              </button>
-              <h2 className="text-2xl font-bold text-gray-800">Profile</h2>
-            </div>
-          </div>
-
-          <div className="ml-64 lg:ml-[20%] p-6 rounded-xl max-w-7xl mx-auto">
+       
+          <div className="">
             {/* Notifications Section */}
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Notifications</h3>
-              {notifications.length > 0 ? (
-                <ul className="space-y-2">
-                  {notifications.map((notification) => (
-                    <li
-                      key={notification._id}
-                      className="bg-white p-4 rounded-lg shadow-md flex justify-between items-center"
-                    >
-                      <span>{notification.message} <span className='space-x-5 font-semibold text-green-500'>({notification.erranderId?.firstName} {notification.erranderId?.lastName} {notification.erranderId?.email})</span></span>
-                      <span className="text-gray-500 text-sm">{new Date(notification.createdAt).toLocaleString()}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-600">No notifications available.</p>
-              )}
-            </div>
-
+     
             {/* Available Erranders Section */}
             <AnimatedSection>
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Available Erranders</h2>

@@ -1345,105 +1345,10 @@ function MyErrander() {
 
   return (
     <>
-      <Navbar />
+
       <div className="flex min-h-screen bg-gray-100 font-sans">
         {/* Sidebar */}
-        <div
-          className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform lg:transform-none transition-transform duration-300 ease-in-out z-50 ${
-            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 lg:w-1/5 p-6 flex flex-col justify-between`}
-        >
-          <div>
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-900 rounded-md mr-2"></div>
-                <h1 className="text-xl font-bold text-gray-800">E_Errands</h1>
-              </div>
-              <button
-                className="lg:hidden text-gray-600 hover:text-gray-800"
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                <FaTimes size={24} />
-              </button>
-            </div>
-            <nav>
-              <ul className="space-y-4">
-                <li>
-                  <Link
-                    to="/erranderdashboard"
-                    className={`flex items-center ${
-                      location.pathname === '/erranderdashboard' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    <FaChartBar className="mr-3 text-gray-500" /> Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    <FaChartBar className="mr-3 text-gray-500" /> MyErranders
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/userprofile"
-                    className={`flex items-center ${
-                      location.pathname === '/userprofile' ? 'text-gray-800 font-semibold' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    <FaHotel className="mr-3 text-gray-500" /> Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    <FaCar className="mr-3 text-gray-500" /> Reports
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="#"
-                    className="flex items-center text-gray-600 hover:text-gray-800"
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    <FaPlane className="mr-3 text-gray-500" /> Statistics
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/login"
-                    className="flex items-center text-red-600 hover:text-gray-800"
-                    onClick={() => setIsSidebarOpen(false)}
-                  >
-                    <FaUser className="mr-3 text-red-500" /> Logout
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </div>
-          <div className="flex items-center">
-            <img
-              src={profile.profilePicture || 'https://randomuser.me/api/portraits/women/44.jpg'}
-              alt="User"
-              className="w-10 h-10 rounded-full mr-3"
-            />
-            <div>
-              <p className="text-green-800">{profile?.userId?.email}</p>
-              <p className="text-gray-800 font-semibold">{profile?.userId?.firstName} {profile?.userId?.lastName}</p>
-              <Link to="#" className="text-gray-600 text-sm hover:underline">
-                Visit site
-              </Link>
-            </div>
-          </div>
-        </div>
+   
 
         {/* Overlay for mobile sidebar */}
         {isSidebarOpen && (
@@ -1454,24 +1359,10 @@ function MyErrander() {
         )}
 
         {/* Main Content */}
-        <div className="flex-1 p-6 lg:p-8">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center">
-              <button
-                className="lg:hidden mr-4 text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              >
-                {isSidebarOpen ? (
-                  <FaTimes size={24} className="text-green-500" />
-                ) : (
-                  <FaBars size={24} className="text-green-500" />
-                )}
-              </button>
-              <h2 className="text-2xl font-bold text-gray-800">Errander Dashboard</h2>
-            </div>
-          </div>
+        <div className="">
+    
 
-          <div className="ml-0 lg:ml-[20%] p-6 rounded-xl max-w-7xl mx-auto">
+          <div className="">
             {/* Notifications Section */}
             <div className="mb-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Notifications</h3>
