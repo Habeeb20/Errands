@@ -552,6 +552,7 @@ function DashboardUser() {
   const [erranderPosition, setErranderPosition] = useState(null);
   const [activeTab, setActiveTab] = useState('Dashboard'); // New state for tab-based navigation
   const navigate = useNavigate();
+  const [totalSpent, setTotalSpent] = useState(0)
 
   // Load Google Maps script
   const { isLoaded } = useLoadScript({
@@ -591,6 +592,16 @@ function DashboardUser() {
         );
         setBookings(bookingsResponse.data.history || []);
 
+        const totalSpentResponse = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/errand/total-spent`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setTotalSpent(totalSpentResponse.data.totalSpent || 0);
+  
+      
+
         toast.success('You are welcome back', {
           style: { background: '#4CAF50', color: 'white' },
         });
@@ -604,10 +615,17 @@ function DashboardUser() {
           navigate('/login');
         }
       }
+
+    
+ 
     };
 
     fetchData();
   }, [navigate]);
+
+
+  
+
 
   // Socket.IO listeners for real-time updates
   useEffect(() => {
@@ -770,7 +788,7 @@ function DashboardUser() {
                 </div>
                 <div>
                   <p className="text-gray-600">Earnings</p>
-                  <p className="text-2xl font-bold text-gray-800">95,540 $</p>
+                  <p className="text-2xl font-bold text-gray-800">N {totalSpent}</p>
                 </div>
               </div>
             </div>

@@ -279,8 +279,8 @@ function ErrandDashboard() {
                   <FaChartBar className="text-red-600 text-2xl" />
                 </div>
                 <div>
-                  <p className="text-green-600 mt-4 font-bold">platForm deduction </p>
-                  <p className="text-2xl font-bold text-gray-800"><span className='font-bold text-black pr-2'>N</span>{tenPercent}</p>
+                  {/* <p className="text-green-600 mt-4 font-bold">platForm deduction </p>
+                  <p className="text-2xl font-bold text-gray-800"><span className='font-bold text-black pr-2'>N</span>{tenPercent}</p> */}
                   <p className="text-green-600 mt-4 font-bold"> Income</p>
                   <p className="text-2xl font-bold text-gray-800"><span className='font-bold text-black pr-2'>N</span>{income}</p>
                 </div>

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useInView } from "framer-motion"; // Import framer-motion
 import im from "../../assets/Frame 1171276669.png";
@@ -8,6 +8,7 @@ import im4 from "../../assets/Rectangle 828125.png";
 import im5 from "../../assets/Frame 1171276669.png"
 import im6 from "../../assets/Frame 1171278488.png"
 import im7 from "../../assets/Frame 1171278490.png"
+import axios from "axios";
 
 
 const sectionVariants = {
@@ -32,7 +33,30 @@ const AnimatedSection = ({ children }) => {
   );
 };
 
+
+
 const Home1 = () => {
+  const [users, setUsers]  = useState([])
+  const [erranders, setErranders]  = useState([])
+  const [messengers, setMessengers]  = useState([])
+
+
+  useEffect(()=> {
+    const fetchUsers = async() => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/allusers`)
+        setUsers(response.data)
+        const response2 = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/allerranders`)
+        setErranders(response2.data)
+        const response3 = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/allmessengerss`)
+        setMessengers(response3.data)
+        
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    fetchUsers()
+  },[])
   return (
     <div className="bg-gray-100">
       {/* Hero Section */}
@@ -64,20 +88,20 @@ const Home1 = () => {
         <section className="bg-red-500 text-white py-6">
           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-              <h3 className="text-2xl md:text-3xl font-bold">1000</h3>
+              <h3 className="text-2xl md:text-3xl font-bold">{erranders?.length}</h3>
               <p className="text-sm">erranders</p>
             </div>
             <div>
-              <h3 className="text-2xl md:text-3xl font-bold">100%</h3>
-              <p className="text-sm">Assurance</p>
+              <h3 className="text-2xl md:text-3xl font-bold">{users?.length}</h3>
+              <p className="text-sm">Users</p>
             </div>
             <div>
-              <h3 className="text-2xl md:text-3xl font-bold">100%</h3>
-              <p className="text-sm">Confident</p>
+              <h3 className="text-2xl md:text-3xl font-bold">{messengers?.length}</h3>
+              <p className="text-sm">Messengers</p>
             </div>
             <div>
               <h3 className="text-2xl md:text-3xl font-bold">1000</h3>
-              <p className="text-sm">Users Nationwide</p>
+              <p className="text-sm">Reviews</p>
             </div>
           </div>
         </section>

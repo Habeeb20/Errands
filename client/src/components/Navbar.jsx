@@ -43,7 +43,7 @@ const Navbar = () => {
             About
           </Link>
           <Link
-            to="/become-an-errander"
+            to="/signup"
             className="block md:inline-block text-gray-600 hover:text-green-500 transition duration-300 mb-2 md:mb-0"
           >
             Become an errander
@@ -55,7 +55,7 @@ const Navbar = () => {
             Telephone booking
           </Link>
           <Link
-            to="/e-messenger"
+            to="/messenger"
             className="block md:inline-block text-gray-600 hover:text-green-500 transition duration-300 mb-2 md:mb-0"
           >
             e-messenger

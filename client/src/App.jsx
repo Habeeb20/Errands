@@ -22,6 +22,8 @@ import MapWithCar from './Pages/MapWithCar';
 import TelephoneBooking from './components/admin/TelephoneBooking';
 import Telephone from './components/others/Telephone';
 import TelephoneErrands from './Pages/Errander/TelephoneErrands';
+import Messenger from './components/E_Messenger/Messenger1';
+import MessengerHome from './Pages/Messenger/MessengerHome';
 
 const App = () => {
   return (
@@ -65,6 +67,7 @@ const App = () => {
           
 
           <Route path="/telephone-booking" element={<Telephone />} />
+          <Route path="/messenger" element={<MessengerHome />} />
 
 
 
