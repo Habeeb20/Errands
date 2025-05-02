@@ -24,6 +24,7 @@ import Telephone from './components/others/Telephone';
 import TelephoneErrands from './Pages/Errander/TelephoneErrands';
 import Messenger from './components/E_Messenger/Messenger1';
 import MessengerHome from './Pages/Messenger/MessengerHome';
+import About1 from './Pages/About/About1';
 
 const App = () => {
   return (
@@ -68,6 +69,7 @@ const App = () => {
 
           <Route path="/telephone-booking" element={<Telephone />} />
           <Route path="/messenger" element={<MessengerHome />} />
+          <Route path="/about" element={<About1 />} />
 
 
 

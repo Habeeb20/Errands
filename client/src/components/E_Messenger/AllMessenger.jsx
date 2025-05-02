@@ -346,8 +346,8 @@ const AllMessenger = () => {
         toast.success('messengers are available', {
           style: { background: 'white', color: 'black' },
         });
-        setData(response.data.data || []);
-
+        setData(response.data || []);
+        console.log(response.data, "data seen")
         // Initialize share and click counts
         const initialShareCounts = {};
         const initialClickCounts = {};
@@ -439,13 +439,13 @@ const AllMessenger = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-10 text-gray-600">Loading erranders...</div>;
+    return <div className="text-center py-10 text-gray-600">Loading messengers...</div>;
   }
 
   return (
     <div className=" bg-gray-100 p-6">
       <AnimatedSection>
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Available Erranders</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Available Messengers</h2>
         {data && data.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.map((dat, index) => (
@@ -470,7 +470,7 @@ const AllMessenger = () => {
                     <p className="text-gray-800 font-semibold">
                       Name:{' '}
                       <span className="font-normal">
-                        {dat.userId?.firstName || 'James'} {dat.userId?.lastName || 'Johnson'}
+                        {dat.name || 'James'} 
                       </span>
                     </p>
                   </div>
@@ -480,13 +480,13 @@ const AllMessenger = () => {
                   <p className="text-gray-800 font-semibold">
                     Gender: <span className="font-normal">{dat.gender || 'N/A'}</span>
                   </p>
-                  <p className={`text-gray-800 font-semibold ${dat.userId?.role === "errander" ? "text-green-500" : dat.userId?.role === "messenger" ? "text-blue-500" : "text-black"}`}>
-                    role: <span className="font-bold ">{dat.userId?.role || 'N/A'}</span>
+                  <p className={`text-gray-800 font-semibold ${dat.role === "errander" ? "text-green-500" : dat.userId?.role === "messenger" ? "text-blue-500" : "text-black"}`}>
+                    role: <span className="font-bold ">{dat.role || 'N/A'}</span>
                   </p>
                   <p className="text-gray-800 font-semibold">
                     Location:{' '}
                     <span className="font-normal">
-                      {dat.LGA || dat.userId?.lga || 'Unknown'}, {dat.state || 'Unknown'}
+                      {dat.LGA || dat?.lga || 'Unknown'}, {dat.state || 'Unknown'}
                     </span>
                   </p>
                   <p
